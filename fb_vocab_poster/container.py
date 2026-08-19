@@ -8,7 +8,11 @@ from functools import cached_property
 
 from .application import DraftLesson, PublishLesson, RenderLesson
 from .application.ports import LessonDrafter
-from .infrastructure.audio import MoviePyNarrationComposer, TtsMakerSpeechSynthesizer
+from .infrastructure.audio import (
+    GttsSpeechSynthesizer,
+    MoviePyNarrationComposer,
+    TtsMakerSpeechSynthesizer,
+)
 from .infrastructure.config import FileSystemWorkspace, Settings, SystemClock
 from .infrastructure.content import (
     AnthropicDrafter,
@@ -63,8 +67,15 @@ class Container:
 
     @cached_property
     def narrator(self) -> MoviePyNarrationComposer:
+        """Currently narrating with gTTS. To go back to TTSMaker, swap the
+        synthesizer below for:
+
+            TtsMakerSpeechSynthesizer(api_key=self.settings.ttsmaker_api_key)
+
+        Both satisfy the `SpeechSynthesizer` port, so nothing else changes.
+        """
         return MoviePyNarrationComposer(
-            synthesizer=TtsMakerSpeechSynthesizer(api_key=self.settings.ttsmaker_api_key),
+            synthesizer=GttsSpeechSynthesizer(),
             workspace=self.workspace,
         )
 

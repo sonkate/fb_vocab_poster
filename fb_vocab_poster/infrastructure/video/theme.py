@@ -22,17 +22,27 @@ BOLD_FONT_CANDIDATES: Sequence[str] = (
 
 @dataclass(frozen=True)
 class Theme:
-    """The "stormy morning" palette and the square canvas it is painted on."""
+    """The "stormy morning" palette and the canvas it is painted on.
+
+    1080x1350 is Meta's recommended 4:5 portrait size: it claims noticeably
+    more of a phone screen than a square without leaving the feed's aspect
+    ratio. Width stays at 1080, so the type scale and margins below are
+    unchanged from the square layout — only vertical room grows.
+
+    Pass `Theme(height=1080)` for the old square canvas, or
+    `Theme(height=1920)` for a 9:16 reel; every layout below derives from
+    these two numbers rather than hard-coding a canvas size.
+    """
 
     width: int = 1080
-    height: int = 1080
+    height: int = 1350
     left: int = 70
     right: int = 70
     top: int = 90
     bottom: int = 70
 
     background: RGB = (56, 73, 89)     # #384959 — dark blue-gray
-    accent: RGB = (136, 189, 242)      # #88BDF2 — headings, IPA, taught words
+    accent: RGB = (255, 193, 69)       # #FFC145 — warm gold; headings, IPA, taught words
     text: RGB = (189, 221, 252)        # #BDDDFC — body copy
     muted: RGB = (106, 137, 167)       # #6A89A7 — rules and secondary detail
 
@@ -47,6 +57,15 @@ class Theme:
     rule_offset: int = 100     # distance from `top` down to the heading rule
     body_offset: int = 50      # distance from that rule down to body copy
     accent_bar_height: int = 14
+
+    # Vertical gaps stacked down a word slide: word -> IPA -> rule -> meaning.
+    # The slide centres the whole stack, so these describe its internal
+    # spacing rather than any absolute position on the canvas.
+    word_ipa_gap: int = 15
+    ipa_rule_gap: int = 35
+    rule_meaning_gap: int = 55
+    meaning_inset: int = 100   # extra side margin so meanings wrap narrower
+    rule_half_width: int = 120
 
     regular_fonts: Sequence[str] = field(default=REGULAR_FONT_CANDIDATES)
     bold_fonts: Sequence[str] = field(default=BOLD_FONT_CANDIDATES)

@@ -87,44 +87,55 @@ class PreparedSlides:
         draw.rectangle([(0, 0), (theme.width, theme.accent_bar_height)], fill=theme.accent)
 
         word_font = theme.font(theme.word_size, bold=True)
+        ipa_font = theme.font(theme.ipa_size)
+        meaning_font = theme.font(theme.meaning_size)
+
         word_lines = text_utils.wrap_plain(draw, entry.word, word_font, theme.max_width)
-        # The word block is centred on a point above the middle, leaving room
-        # for the IPA and meaning that hang below it.
-        block_height = len(word_lines) * int(word_font.size * 1.3)
-        y = text_utils.draw_centered(
-            draw,
-            word_lines,
-            word_font,
-            theme.height / 2 - 100 - block_height / 2,
-            theme.text,
-            theme.width,
+        ipa_lines = (
+            text_utils.wrap_plain(draw, entry.ipa, ipa_font, theme.max_width)
+            if entry.ipa
+            else []
         )
-        y += 15
-
-        if entry.ipa:
-            ipa_font = theme.font(theme.ipa_size)
-            y = text_utils.draw_centered(
-                draw,
-                text_utils.wrap_plain(draw, entry.ipa, ipa_font, theme.max_width),
-                ipa_font,
-                y,
-                theme.accent,
-                theme.width,
+        meaning_lines = (
+            text_utils.wrap_plain(
+                draw, entry.meaning, meaning_font, theme.max_width - theme.meaning_inset
             )
-            y += 35
+            if entry.meaning
+            else []
+        )
 
-        if entry.meaning:
+        # Measure the whole stack before drawing any of it, so the slide sits
+        # optically centred on any canvas height instead of at an offset tuned
+        # for one particular one. A word with a two-line meaning therefore
+        # centres just as well as a bare word.
+        total = text_utils.block_height(word_lines, word_font) + theme.word_ipa_gap
+        if ipa_lines:
+            total += text_utils.block_height(ipa_lines, ipa_font) + theme.ipa_rule_gap
+        if meaning_lines:
+            total += theme.rule_meaning_gap + text_utils.block_height(
+                meaning_lines, meaning_font
+            )
+
+        y = (theme.height - total) / 2
+        y = text_utils.draw_centered(draw, word_lines, word_font, y, theme.text, theme.width)
+        y += theme.word_ipa_gap
+
+        if ipa_lines:
+            y = text_utils.draw_centered(
+                draw, ipa_lines, ipa_font, y, theme.accent, theme.width
+            )
+            y += theme.ipa_rule_gap
+
+        if meaning_lines:
             centre = theme.width / 2
-            draw.line([(centre - 120, y), (centre + 120, y)], fill=theme.muted, width=2)
-            y += 55
-            meaning_font = theme.font(theme.meaning_size)
+            draw.line(
+                [(centre - theme.rule_half_width, y), (centre + theme.rule_half_width, y)],
+                fill=theme.muted,
+                width=2,
+            )
+            y += theme.rule_meaning_gap
             text_utils.draw_centered(
-                draw,
-                text_utils.wrap_plain(draw, entry.meaning, meaning_font, theme.max_width - 100),
-                meaning_font,
-                y,
-                theme.muted,
-                theme.width,
+                draw, meaning_lines, meaning_font, y, theme.muted, theme.width
             )
 
         return image
@@ -134,9 +145,10 @@ class PreparedSlides:
         image, draw = self._canvas()
         y = self._heading(draw, PARAGRAPH_HEADING)
         body_font = theme.font(theme.body_size)
+        bold_body_font = theme.font(theme.body_size, bold=True)
         for line in page:
             text_utils.draw_token_line(
-                draw, line, theme.left, y, body_font, theme.text, theme.accent
+                draw, line, theme.left, y, body_font, bold_body_font, theme.text, theme.accent
             )
             y += theme.line_height
         return image

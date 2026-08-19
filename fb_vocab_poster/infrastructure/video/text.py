@@ -50,21 +50,34 @@ def paginate(lines: Sequence, per_page: int) -> List[List]:
     return [list(lines[i:i + per_page]) for i in range(0, len(lines), per_page)]
 
 
-def draw_token_line(draw, tokens: Sequence[Token], x: int, y: float, font, color, highlight_color) -> None:
+def draw_token_line(
+    draw, tokens: Sequence[Token], x: int, y: float, font, highlight_font, color, highlight_color
+) -> None:
     space = draw.textlength(" ", font=font)
     for word, highlighted in tokens:
-        draw.text((x, y), word, font=font, fill=highlight_color if highlighted else color)
-        x += draw.textlength(word, font=font) + space
+        f = highlight_font if highlighted else font
+        draw.text((x, y), word, font=f, fill=highlight_color if highlighted else color)
+        x += draw.textlength(word, font=f) + space
+
+
+def line_height(font) -> int:
+    """Leading scales with the font's own size, so this reads correctly for
+    both body copy and large display type."""
+    return int(font.size * 1.3)
+
+
+def block_height(lines: Sequence, font) -> int:
+    """Total height a set of wrapped lines will occupy once drawn."""
+    return len(lines) * line_height(font)
 
 
 def draw_centered(draw, lines: Sequence[str], font, top: float, color, canvas_width: int) -> float:
     """Draws horizontally-centred lines from a fixed top edge, returning the y
-    just past the last one. Line height follows the font's own size so this
-    reads correctly for both body copy and large display type."""
-    line_height = int(font.size * 1.3)
+    just past the last one."""
+    leading = line_height(font)
     y = top
     for line in lines:
         width = draw.textlength(line, font=font)
         draw.text(((canvas_width - width) / 2, y), line, font=font, fill=color)
-        y += line_height
+        y += leading
     return y
