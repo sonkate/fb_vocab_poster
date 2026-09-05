@@ -11,6 +11,7 @@ from .application.ports import LessonDrafter
 from .infrastructure.audio import (
     GttsSpeechSynthesizer,
     MoviePyNarrationComposer,
+    TiengDongSpeechSynthesizer,
     TtsMakerSpeechSynthesizer,
 )
 from .infrastructure.config import FileSystemWorkspace, Settings, SystemClock
@@ -67,15 +68,24 @@ class Container:
 
     @cached_property
     def narrator(self) -> MoviePyNarrationComposer:
-        """Currently narrating with gTTS. To go back to TTSMaker, swap the
-        synthesizer below for:
+        """Currently narrating with TiengDong (unofficial — see
+        `infrastructure/audio/tiengdong_synthesizer.py` for the cookie
+        caveat). If `TIENGDONG_PHPSESSID`/`TIENGDONG_COOKIE_ID` go stale and
+        you need a working engine right away, swap the synthesizer below for
+        one of:
 
+            GttsSpeechSynthesizer()
             TtsMakerSpeechSynthesizer(api_key=self.settings.ttsmaker_api_key)
 
-        Both satisfy the `SpeechSynthesizer` port, so nothing else changes.
+        All three satisfy the `SpeechSynthesizer` port, so nothing else
+        changes.
         """
         return MoviePyNarrationComposer(
-            synthesizer=GttsSpeechSynthesizer(),
+            synthesizer=TiengDongSpeechSynthesizer(
+                php_session_id=self.settings.tiengdong_php_session_id,
+                cookie_id=self.settings.tiengdong_cookie_id,
+                voice=self.settings.tiengdong_voice,
+            ),
             workspace=self.workspace,
         )
 

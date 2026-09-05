@@ -8,7 +8,7 @@ Facebook Page. One topic + one CEFR level per post.
 - **Python** — fastest to prototype media pipelines + has a good FB SDK story via `requests`.
 - **Clean architecture** — the pieces most likely to be replaced (TTS engine, social platform, drafting model) sit behind interfaces, so replacing one doesn't ripple.
 - **Claude (Anthropic API)** — drafts the paragraph + vocab list + caption from a topic/level. You review and edit before anything goes out.
-- **gTTS** — free Google Translate TTS for narration. Robotic but $0 and zero setup. Swap-in point noted below if you want a natural voice later.
+- **TiengDong TTS** — the web tool at tiengdong.com's `text-to-speech` page, called directly (no official API — see `infrastructure/audio/tiengdong_synthesizer.py`). Free, better voices than gTTS, but authenticated with a captured browser session instead of an API key, so it's the least durable engine here. `GttsSpeechSynthesizer` (free, zero setup, robotic) and `TtsMakerSpeechSynthesizer` (paid API key) are both still wired in and satisfy the same port — swap-in point noted in `container.py`.
 - **Pillow + moviepy** — draws simple text slides (title / vocab / paragraph) and stitches them into an MP4 synced to the narration length. No video editing skill needed, no ImageMagick dependency.
 - **Facebook Graph API** (`graph-video.facebook.com/.../videos`) — direct HTTP upload, no heavy SDK.
 
@@ -76,6 +76,11 @@ Fill in `.env`:
   can then paste in content from a free claude.ai chat by hand and edit
   normally. Same file format either way.
 - `FB_PAGE_ACCESS_TOKEN` / `FB_PAGE_ID` — see below
+- `TIENGDONG_PHPSESSID` / `TIENGDONG_COOKIE_ID` — required for narration (the
+  active engine). Capture both from a browser: open
+  [tiengdong.com/text-to-speech](https://tiengdong.com/text-to-speech),
+  convert any text, open DevTools → Network, click the `admin-ajax.php`
+  request, and copy the `PHPSESSID` and `atts_user_id` cookie values.
 
 ## 2. Facebook setup (one-time)
 
@@ -139,6 +144,13 @@ Roughly in the order I'd tackle them:
 
 ## Known rough edges (it's a prototype)
 
+- TiengDong TTS has no official API — it's a captured browser session
+  (`TIENGDONG_PHPSESSID`/`TIENGDONG_COOKIE_ID`), not an API key, so it can go
+  stale without warning. Run `python scripts/check_tiengdong_session.py`
+  before a batch of drafts to see the cookie's decoded expiry and confirm the
+  session is still accepted; if it isn't, re-capture both values (see
+  Install, step 1) or swap back to
+  `GttsSpeechSynthesizer`/`TtsMakerSpeechSynthesizer` in `container.py`.
 - gTTS pacing is fixed; long paragraphs can feel rushed. Trim to ~100 words if it sounds fast.
 - Facebook Graph API occasionally takes a minute to finish processing an
   uploaded video before it's visible on the Page — that's normal.

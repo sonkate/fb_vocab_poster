@@ -17,6 +17,9 @@ class Settings:
     facebook_page_id: str = ""
     facebook_graph_version: str = "v20.0"
     ttsmaker_api_key: str = ""
+    tiengdong_php_session_id: str = ""
+    tiengdong_cookie_id: str = ""
+    tiengdong_voice: str = "en-US-Standard-E"
     drafts_dir: str = "drafts"
     output_dir: str = "output"
 
@@ -39,6 +42,9 @@ class Settings:
                 "FB_GRAPH_VERSION", defaults.facebook_graph_version
             ),
             ttsmaker_api_key=os.getenv("TTSMAKER_API_KEY", ""),
+            tiengdong_php_session_id=os.getenv("TIENGDONG_PHPSESSID", ""),
+            tiengdong_cookie_id=os.getenv("TIENGDONG_COOKIE_ID", ""),
+            tiengdong_voice=os.getenv("TIENGDONG_VOICE", defaults.tiengdong_voice),
             drafts_dir=os.getenv("DRAFTS_DIR", defaults.drafts_dir),
             output_dir=os.getenv("OUTPUT_DIR", defaults.output_dir),
         )
