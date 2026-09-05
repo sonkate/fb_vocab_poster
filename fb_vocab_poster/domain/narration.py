@@ -9,10 +9,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
 from .lesson import Lesson, VocabEntry
-
-WORD = "word"
-PARAGRAPH = "paragraph"
-OUTRO = "outro"
+from .lesson_format import OUTRO, PARAGRAPH, WORD
 
 
 @dataclass(frozen=True)
@@ -54,14 +51,21 @@ class NarrationSegment:
 
 
 def build_audio_plan(lesson: Lesson) -> List[SpeechCue]:
-    """Every vocabulary word is spoken twice — slowly, then at normal speed —
-    before the paragraph is read once, so learners hear each word in isolation
-    before meeting it in context."""
+    """What gets read aloud, in order, at what pace.
+
+    The format decides which column is spoken and whether it is worth hearing
+    twice: a vocabulary word is read slowly and then at speed so a learner
+    catches it in isolation, while a corrected sentence only needs saying once.
+    """
+    spec = lesson.spec
     plan: List[SpeechCue] = []
     for index, entry in enumerate(lesson.vocab):
-        plan.append(SpeechCue(kind=WORD, text=entry.spoken, slow=True, vocab_index=index))
-        plan.append(SpeechCue(kind=WORD, text=entry.spoken, slow=False, vocab_index=index))
-    plan.append(SpeechCue(kind=PARAGRAPH, text=lesson.paragraph.strip(), slow=False))
+        text = entry.columns[spec.spoken_column].strip()
+        if spec.repeat_slowly:
+            plan.append(SpeechCue(kind=WORD, text=text, slow=True, vocab_index=index))
+        plan.append(SpeechCue(kind=WORD, text=text, slow=False, vocab_index=index))
+    if spec.needs_paragraph:
+        plan.append(SpeechCue(kind=PARAGRAPH, text=lesson.paragraph.strip(), slow=False))
     return plan
 
 

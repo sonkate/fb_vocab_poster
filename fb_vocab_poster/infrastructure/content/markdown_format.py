@@ -6,12 +6,18 @@ pinned down in exactly one place: here.
 import re
 from typing import Dict, List
 
-from ...domain import CEFRLevel, InvalidLessonFile, Lesson, VocabEntry
+from ...domain import (
+    CEFRLevel,
+    InvalidLessonFile,
+    Lesson,
+    LessonFormat,
+    VocabEntry,
+    spec_for,
+)
 
 FRONTMATTER = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 FIELD_SEPARATOR = "—"
 
-VOCABULARY = "Vocabulary"
 PARAGRAPH = "Paragraph"
 CAPTION = "Caption"
 
@@ -38,7 +44,10 @@ def _section(text: str, name: str) -> str:
 def _parse_vocab(block: str) -> List[VocabEntry]:
     entries: List[VocabEntry] = []
     for raw_line in block.splitlines():
-        line = raw_line.strip().lstrip("-").strip()
+        line = raw_line.strip()
+        if line.startswith("<!--"):   # the column legend `render` writes
+            continue
+        line = line.lstrip("-").strip()
         if not line:
             continue
         parts = [part.strip() for part in line.split(FIELD_SEPARATOR)]
@@ -58,11 +67,14 @@ def parse(text: str, source: str = "<draft>") -> Lesson:
             f"{source} has no `level:` in its frontmatter — add e.g. `level: B1`."
         )
     level = CEFRLevel.parse(raw_level)
+    lesson_format = LessonFormat.parse(meta.get("format", ""))
+    spec = spec_for(lesson_format)
 
     return Lesson(
         topic=meta.get("topic", ""),
         level=level,
-        vocab=tuple(_parse_vocab(_section(body, VOCABULARY))),
+        format=lesson_format,
+        vocab=tuple(_parse_vocab(_section(body, spec.section))),
         # Bold markers help a human reader but would be read aloud and drawn
         # literally, so they come off here.
         paragraph=_section(body, PARAGRAPH).replace("**", ""),
@@ -72,17 +84,24 @@ def parse(text: str, source: str = "<draft>") -> Lesson:
 
 def render(lesson: Lesson) -> str:
     """Serialises a lesson back into the same format `parse` accepts."""
+    spec = lesson.spec
     lines = [
         "---",
         f"topic: {lesson.topic}",
         f"level: {lesson.level}",
+        f"format: {lesson.format}",
         "---",
         "",
-        f"## {VOCABULARY}",
+        f"## {spec.section}",
+        # The columns differ per format, so the file says which is which
+        # rather than leaving a reviewer to infer it from the rows.
+        f"<!-- {f' {FIELD_SEPARATOR} '.join(spec.columns)} -->",
     ]
     for entry in lesson.vocab:
         lines.append(
             f"- {entry.word} {FIELD_SEPARATOR} {entry.ipa} {FIELD_SEPARATOR} {entry.meaning}"
         )
-    lines += ["", f"## {PARAGRAPH}", lesson.paragraph.strip(), "", f"## {CAPTION}", lesson.caption.strip(), ""]
+    if spec.needs_paragraph:
+        lines += ["", f"## {PARAGRAPH}", lesson.paragraph.strip()]
+    lines += ["", f"## {CAPTION}", lesson.caption.strip(), ""]
     return "\n".join(lines)

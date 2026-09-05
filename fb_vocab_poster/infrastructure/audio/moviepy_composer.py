@@ -15,7 +15,6 @@ from ...application.ports import DraftRef, Narration, SpeechSynthesizer, Workspa
 from ...domain import (
     OUTRO,
     PARAGRAPH,
-    WORD,
     Lesson,
     NarrationSegment,
     NarrationTiming,
@@ -45,32 +44,30 @@ class MoviePyNarrationComposer:
         clips: List = []
         segments: List[NarrationSegment] = []
 
+        spec = lesson.spec
         for index, entry in enumerate(lesson.vocab):
-            slow = speech[f"word_{index}_slow"]
             fast = speech[f"word_{index}_normal"]
-            clips.extend(
-                [
-                    slow,
-                    _silence(self.timing.pause_between_slow_fast),
-                    fast,
-                    _silence(self.timing.pause_after_word),
-                ]
-            )
+            if spec.repeat_slowly:
+                slow = speech[f"word_{index}_slow"]
+                clips.extend([slow, _silence(self.timing.pause_between_slow_fast)])
+                duration = word_segment_duration(
+                    slow.duration, fast.duration, self.timing
+                )
+            else:
+                duration = fast.duration + self.timing.pause_after_word
+            clips.extend([fast, _silence(self.timing.pause_after_word)])
             segments.append(
                 NarrationSegment(
-                    kind=WORD,
-                    duration=word_segment_duration(
-                        slow.duration, fast.duration, self.timing
-                    ),
-                    vocab=entry,
+                    kind=spec.slide_kind, duration=duration, vocab=entry
                 )
             )
 
-        paragraph = speech[PARAGRAPH]
-        clips.append(paragraph)
-        segments.append(
-            NarrationSegment(kind=PARAGRAPH, duration=paragraph.duration)
-        )
+        if spec.needs_paragraph:
+            paragraph = speech[PARAGRAPH]
+            clips.append(paragraph)
+            segments.append(
+                NarrationSegment(kind=PARAGRAPH, duration=paragraph.duration)
+            )
 
         # The brand card closes in silence, after the lesson has earned it.
         clips.append(_silence(self.timing.outro_pause))

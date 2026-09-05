@@ -7,7 +7,8 @@ that depends on the font metrics of whatever renderer is in use.
 from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
-from .narration import OUTRO, PARAGRAPH, WORD, NarrationSegment
+from .lesson_format import PARAGRAPH
+from .narration import NarrationSegment
 from .lesson import VocabEntry
 
 
@@ -31,19 +32,21 @@ def build_slide_plan(
     plan: List[SlideRequest] = []
 
     for segment in segments:
-        if segment.kind == OUTRO:
-            plan.append(SlideRequest(kind=OUTRO, duration=segment.duration))
-        elif segment.kind == WORD:
-            plan.append(
-                SlideRequest(kind=WORD, duration=segment.duration, vocab=segment.vocab)
-            )
-        elif segment.kind == PARAGRAPH:
+        if segment.kind == PARAGRAPH:
             per_page = segment.duration / pages
             plan.extend(
                 SlideRequest(
                     kind=PARAGRAPH, duration=per_page, page=page, page_count=pages
                 )
                 for page in range(pages)
+            )
+        else:
+            # A segment's kind is already the layout its format asked for, so
+            # a new format needs no branch here — only a painter.
+            plan.append(
+                SlideRequest(
+                    kind=segment.kind, duration=segment.duration, vocab=segment.vocab
+                )
             )
 
     return plan

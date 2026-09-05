@@ -66,6 +66,7 @@ class Theme:
     accent: RGB = (255, 193, 69)       # #FFC145 — brand gold; headings, IPA, taught words
     text: RGB = (232, 241, 248)        # #E8F1F8 — body copy
     muted: RGB = (106, 137, 167)       # #6A89A7 — rules and secondary detail
+    danger: RGB = (255, 122, 107)      # #FF7A6B — the wrong half of a contrast slide
 
     body_size: int = 40
     line_height: int = 56
@@ -74,6 +75,12 @@ class Theme:
     word_size: int = 88
     ipa_size: int = 44
     meaning_size: int = 38
+
+    # Contrast slides (mistake, upgrade) stack label / before / after / note.
+    # Both halves are often whole sentences, so they sit well below word_size.
+    label_size: int = 34
+    contrast_from_size: int = 48
+    contrast_to_size: int = 64
 
     rule_offset: int = 100     # distance from `top` down to the heading rule
     body_offset: int = 50      # distance from that rule down to body copy

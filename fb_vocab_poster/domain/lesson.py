@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Iterator, List, Sequence, Tuple
 
 from .errors import IncompleteLessonError
+from .lesson_format import FORMATS, LessonFormat
 from .level import CEFRLevel
 
 _WORD_CHARS = re.compile(r"[^\w']")
@@ -11,11 +12,22 @@ _WORD_CHARS = re.compile(r"[^\w']")
 
 @dataclass(frozen=True)
 class VocabEntry:
-    """One word being taught, with how to say it and what it means."""
+    """One row of a lesson: three fields whose meaning the format decides.
+
+    The names below are the vocab format's — word, pronunciation, meaning —
+    because that format came first. A `mistake` row puts the wrong sentence,
+    the corrected one and the explanation in the same three slots. Anything
+    that is not format-specific should read them through `columns`.
+    """
 
     word: str
     ipa: str = ""
     meaning: str = ""
+
+    @property
+    def columns(self):
+        """The three fields positionally, for code that must not assume a format."""
+        return self.word, self.ipa, self.meaning
 
     @property
     def spoken(self) -> str:
@@ -30,22 +42,28 @@ class VocabEntry:
 
 @dataclass(frozen=True)
 class Lesson:
-    """A complete, reviewed lesson: the words, the paragraph that uses them,
-    and the caption that goes out with the post."""
+    """A complete, reviewed lesson: its rows, the paragraph that uses them if
+    the format has one, and the caption that goes out with the post."""
 
     topic: str
     level: CEFRLevel
     vocab: Sequence[VocabEntry] = field(default_factory=tuple)
     paragraph: str = ""
     caption: str = ""
+    format: LessonFormat = LessonFormat.VOCAB
+
+    @property
+    def spec(self):
+        return FORMATS[self.format]
 
     def ensure_publishable(self) -> None:
-        """Raises unless the lesson has everything the pipeline needs."""
+        """Raises unless the lesson has everything its format needs."""
+        spec = self.spec
         missing = []
-        if not self.paragraph.strip():
+        if spec.needs_paragraph and not self.paragraph.strip():
             missing.append("Paragraph")
         if not self.vocab:
-            missing.append("Vocabulary")
+            missing.append(spec.section)
         if missing:
             raise IncompleteLessonError(
                 f"Lesson is missing a {' and '.join(missing)} section — check the draft file."

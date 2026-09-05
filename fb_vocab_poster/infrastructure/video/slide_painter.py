@@ -10,11 +10,21 @@ from typing import List, Sequence
 
 from PIL import Image, ImageDraw
 
-from ...domain import OUTRO, PARAGRAPH, WORD, Lesson, SlideRequest, VocabEntry
+from ...domain import (
+    MISTAKE,
+    OUTRO,
+    PARAGRAPH,
+    UPGRADE,
+    WORD,
+    Lesson,
+    SlideRequest,
+    VocabEntry,
+)
 from . import text as text_utils
 from .theme import Theme
 
 PARAGRAPH_HEADING = "READ ALONG"
+ARROW = "↓"
 
 
 @dataclass(frozen=True)
@@ -35,6 +45,8 @@ class PreparedSlides:
             image = self._outro()
         elif request.kind == WORD:
             image = self._word(request.vocab)
+        elif request.kind in (MISTAKE, UPGRADE):
+            image = self._contrast(request.vocab)
         elif request.kind == PARAGRAPH:
             image = self._paragraph(self.paragraph_pages[request.page])
         else:
@@ -173,6 +185,65 @@ class PreparedSlides:
                 draw, meaning_lines, meaning_font, y, theme.muted, theme.width
             )
 
+        return image
+
+    def _contrast(self, entry: VocabEntry) -> Image.Image:
+        """Before above, after below: the shared layout of every format that
+        teaches by opposition — a mistake and its correction, a weak phrase and
+        its upgrade. The format's own label says which one the viewer is
+        looking at."""
+        theme = self.theme
+        spec = self.lesson.spec
+        image, draw = self._canvas()
+        draw.rectangle([(0, 0), (theme.width, theme.accent_bar_height)], fill=theme.accent)
+
+        before, after, note = entry.columns
+        label_font = theme.font(theme.label_size, bold=True)
+        from_font = theme.font(theme.contrast_from_size)
+        arrow_font = theme.ipa_font(theme.contrast_from_size)
+        to_font = theme.font(theme.contrast_to_size, bold=True)
+        note_font = theme.font(theme.meaning_size)
+
+        before_lines = text_utils.wrap_plain(draw, before, from_font, theme.max_width)
+        after_lines = text_utils.wrap_plain(draw, after, to_font, theme.max_width)
+        note_lines = (
+            text_utils.wrap_plain(
+                draw, note, note_font, theme.max_width - theme.meaning_inset
+            )
+            if note
+            else []
+        )
+
+        total = (
+            text_utils.line_height(label_font)
+            + theme.rule_meaning_gap
+            + text_utils.block_height(before_lines, from_font)
+            + text_utils.line_height(arrow_font)
+            + text_utils.block_height(after_lines, to_font)
+        )
+        if note_lines:
+            total += theme.rule_meaning_gap + text_utils.block_height(note_lines, note_font)
+
+        y = (theme.height - total) / 2
+        y = text_utils.draw_centered(
+            draw, [spec.label], label_font, y, theme.danger, theme.width
+        )
+        y += theme.rule_meaning_gap
+        y = text_utils.draw_centered(
+            draw, before_lines, from_font, y, theme.danger, theme.width
+        )
+        y = text_utils.draw_centered(
+            draw, [ARROW], arrow_font, y, theme.muted, theme.width
+        )
+        y = text_utils.draw_centered(
+            draw, after_lines, to_font, y, theme.accent, theme.width
+        )
+
+        if note_lines:
+            y += theme.rule_meaning_gap
+            text_utils.draw_centered(
+                draw, note_lines, note_font, y, theme.muted, theme.width
+            )
         return image
 
     def _paragraph(self, page: Sequence[Sequence[text_utils.Token]]) -> Image.Image:

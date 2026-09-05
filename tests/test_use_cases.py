@@ -14,6 +14,7 @@ from fb_vocab_poster.domain import (
     CEFRLevel,
     IncompleteLessonError,
     Lesson,
+    LessonFormat,
     NarrationSegment,
     VocabEntry,
 )
@@ -47,8 +48,8 @@ class FakeDrafter:
     def __init__(self):
         self.calls = []
 
-    def draft(self, topic, level):
-        self.calls.append((topic, level))
+    def draft(self, topic, level, lesson_format):
+        self.calls.append((topic, level, lesson_format))
         return LESSON
 
 
@@ -103,9 +104,19 @@ def test_drafting_parses_the_level_before_asking_the_drafter():
         "Travel", "b1"
     )
 
-    assert drafter.calls == [("Travel", CEFRLevel.B1)]
+    assert drafter.calls == [("Travel", CEFRLevel.B1, LessonFormat.VOCAB)]
     assert repository.saved[0][1] == datetime(2026, 1, 1, 12, 0, 0)
     assert ref.identifier == "drafts/travel_B1.md"
+
+
+def test_the_requested_format_reaches_the_drafter():
+    drafter = FakeDrafter()
+
+    DraftLesson(drafter=drafter, repository=FakeRepository(), clock=FakeClock())(
+        "Travel", "b1", "mistake"
+    )
+
+    assert drafter.calls[0][2] is LessonFormat.MISTAKE
 
 
 def test_rendering_returns_the_lesson_alongside_its_artefacts():

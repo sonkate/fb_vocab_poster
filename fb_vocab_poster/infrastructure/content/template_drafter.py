@@ -6,9 +6,9 @@ that lands on disk is identical in shape to the AI-drafted one.
 """
 from dataclasses import dataclass
 
-from ...domain import CEFRLevel, Lesson, VocabEntry
+from ...domain import CEFRLevel, Lesson, LessonFormat, VocabEntry, spec_for
 
-PLACEHOLDER_PARAGRAPH = "Paste your paragraph here. Use every vocab word above at least once."
+PLACEHOLDER_PARAGRAPH = "Paste your paragraph here. Use every word above at least once."
 PLACEHOLDER_CAPTION = "Paste your Facebook caption here."
 
 
@@ -16,14 +16,20 @@ PLACEHOLDER_CAPTION = "Paste your Facebook caption here."
 class TemplateDrafter:
     rows: int = 2
 
-    def draft(self, topic: str, level: CEFRLevel) -> Lesson:
+    def draft(
+        self,
+        topic: str,
+        level: CEFRLevel,
+        lesson_format: LessonFormat = LessonFormat.VOCAB,
+    ) -> Lesson:
+        # Each placeholder row spells out that format's own column names, so a
+        # blank file says what belongs where without a trip back to the README.
+        columns = spec_for(lesson_format).columns
         return Lesson(
             topic=topic,
             level=level,
-            vocab=tuple(
-                VocabEntry(word="word", ipa="/ipa/", meaning="meaning")
-                for _ in range(self.rows)
-            ),
+            format=lesson_format,
+            vocab=tuple(VocabEntry(*columns) for _ in range(self.rows)),
             paragraph=PLACEHOLDER_PARAGRAPH,
             caption=PLACEHOLDER_CAPTION,
         )

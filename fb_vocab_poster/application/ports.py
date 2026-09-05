@@ -9,7 +9,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Protocol, Sequence
 
-from ..domain import CEFRLevel, Lesson, NarrationSegment, SpeechCue
+from ..domain import (
+    CEFRLevel,
+    Lesson,
+    LessonFormat,
+    NarrationSegment,
+    SpeechCue,
+)
 
 
 @dataclass(frozen=True)
@@ -49,9 +55,11 @@ class PublishReceipt:
 
 
 class LessonDrafter(Protocol):
-    """Produces lesson content for a topic and level."""
+    """Produces lesson content for a topic, level and format."""
 
-    def draft(self, topic: str, level: CEFRLevel) -> Lesson: ...
+    def draft(
+        self, topic: str, level: CEFRLevel, lesson_format: LessonFormat
+    ) -> Lesson: ...
 
 
 class DraftRepository(Protocol):

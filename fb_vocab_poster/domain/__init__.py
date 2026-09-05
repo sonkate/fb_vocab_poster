@@ -10,11 +10,19 @@ from .errors import (
     InvalidLevelError,
 )
 from .lesson import Lesson, VocabEntry, to_entries
-from .level import CEFRLevel
-from .narration import (
+from .lesson_format import (
+    FORMATS,
+    MISTAKE,
     OUTRO,
     PARAGRAPH,
+    UPGRADE,
     WORD,
+    FormatSpec,
+    LessonFormat,
+    spec_for,
+)
+from .level import CEFRLevel
+from .narration import (
     NarrationSegment,
     NarrationTiming,
     SpeechCue,
@@ -25,23 +33,29 @@ from .narration import (
 from .slides import SlideRequest, build_slide_plan
 
 __all__ = [
+    "build_audio_plan",
+    "build_slide_plan",
     "CEFRLevel",
     "DomainError",
+    "FORMATS",
+    "FormatSpec",
     "IncompleteLessonError",
     "InvalidLessonFile",
     "InvalidLevelError",
     "Lesson",
+    "LessonFormat",
+    "MISTAKE",
     "NarrationSegment",
     "NarrationTiming",
     "OUTRO",
     "PARAGRAPH",
     "SlideRequest",
+    "spec_for",
     "SpeechCue",
-    "VocabEntry",
-    "WORD",
-    "build_audio_plan",
-    "build_slide_plan",
     "to_entries",
     "total_duration",
+    "UPGRADE",
+    "VocabEntry",
+    "WORD",
     "word_segment_duration",
 ]

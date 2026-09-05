@@ -7,7 +7,7 @@ import argparse
 from typing import List, Optional
 
 from ..container import Container
-from ..domain import DomainError
+from ..domain import FORMATS, DomainError
 
 PROGRAM = "main.py"
 DESCRIPTION = "Draft, render and publish English vocabulary lessons as Facebook videos."
@@ -22,6 +22,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     draft.add_argument("topic", help='lesson topic, e.g. "Ordering coffee"')
     draft.add_argument("level", help="CEFR level: A1 A2 B1 B2 C1 C2")
+    draft.add_argument(
+        "--format",
+        dest="lesson_format",
+        default="vocab",
+        choices=[name.value for name in FORMATS],
+        help="which kind of lesson to write (default: vocab)",
+    )
 
     build = commands.add_parser(
         "build", help="render audio + video from a draft, without posting"
@@ -37,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _draft(container: Container, args) -> int:
-    ref = container.draft_lesson(args.topic, args.level)
+    ref = container.draft_lesson(args.topic, args.level, args.lesson_format)
     reporter = container.reporter
 
     if not container.settings.can_auto_draft:
