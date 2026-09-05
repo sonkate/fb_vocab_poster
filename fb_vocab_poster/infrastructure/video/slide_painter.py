@@ -144,6 +144,12 @@ class PreparedSlides:
         theme = self.theme
         image, draw = self._canvas()
         y = self._heading(draw, PARAGRAPH_HEADING)
+
+        # A page rarely fills a 9:16 canvas, and text pinned under the heading
+        # leaves the bottom two-thirds empty. Centring the block in whatever
+        # room is left keeps the slide balanced at any aspect ratio.
+        y += max(0, (theme.content_height - len(page) * theme.line_height) / 2)
+
         body_font = theme.font(theme.body_size)
         bold_body_font = theme.font(theme.body_size, bold=True)
         for line in page:

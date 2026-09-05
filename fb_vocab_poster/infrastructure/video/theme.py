@@ -8,6 +8,10 @@ from PIL import ImageFont
 
 RGB = Tuple[int, int, int]
 
+SQUARE_HEIGHT = 1080   # 1:1, the original feed post
+FEED_HEIGHT = 1350     # 4:5, Meta's recommended portrait feed size
+REEL_HEIGHT = 1920     # 9:16, full-screen Reels
+
 ASSETS_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
     "assets",
@@ -43,18 +47,16 @@ IPA_FONT_CANDIDATES: Sequence[str] = (
 class Theme:
     """The "Lên Band" palette and the canvas it is painted on.
 
-    1080x1350 is Meta's recommended 4:5 portrait size: it claims noticeably
-    more of a phone screen than a square without leaving the feed's aspect
-    ratio. Width stays at 1080, so the type scale and margins below are
-    unchanged from the square layout — only vertical room grows.
-
-    Pass `Theme(height=1080)` for the old square canvas, or
-    `Theme(height=1920)` for a 9:16 reel; every layout below derives from
-    these two numbers rather than hard-coding a canvas size.
+    Width stays at 1080 whatever the height, so the type scale and margins
+    below never need retuning — only vertical room changes. Pass
+    `height=REEL_HEIGHT` for 9:16 Reels (what `container.py` builds),
+    `FEED_HEIGHT` for a 4:5 feed post, or `SQUARE_HEIGHT` for the original
+    square. Every layout below derives from these two numbers rather than
+    hard-coding a canvas size.
     """
 
     width: int = 1080
-    height: int = 1350
+    height: int = FEED_HEIGHT
     left: int = 70
     right: int = 70
     top: int = 90

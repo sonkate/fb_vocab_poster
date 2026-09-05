@@ -21,7 +21,12 @@ from .infrastructure.content import (
     TemplateDrafter,
 )
 from .infrastructure.publishing import FacebookPagePublisher
-from .infrastructure.video import MoviePyVideoRenderer, PillowSlidePainter, Theme
+from .infrastructure.video import (
+    REEL_HEIGHT,
+    MoviePyVideoRenderer,
+    PillowSlidePainter,
+    Theme,
+)
 from .interface.console import ConsoleReporter
 
 
@@ -53,7 +58,10 @@ class Container:
 
     @cached_property
     def theme(self) -> Theme:
-        return Theme()
+        """9:16, because Reels reach 3-4x what a 4:5 feed video does. Every
+        layout derives from the canvas, so this is the only line that decides
+        the output shape — pass `FEED_HEIGHT` here to go back to 4:5."""
+        return Theme(height=REEL_HEIGHT)
 
     @cached_property
     def drafter(self) -> LessonDrafter:
