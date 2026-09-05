@@ -87,7 +87,7 @@ class PreparedSlides:
         draw.rectangle([(0, 0), (theme.width, theme.accent_bar_height)], fill=theme.accent)
 
         word_font = theme.font(theme.word_size, bold=True)
-        ipa_font = theme.font(theme.ipa_size)
+        ipa_font = theme.ipa_font(theme.ipa_size)
         meaning_font = theme.font(theme.meaning_size)
 
         word_lines = text_utils.wrap_plain(draw, entry.word, word_font, theme.max_width)

@@ -8,21 +8,40 @@ from PIL import ImageFont
 
 RGB = Tuple[int, int, int]
 
-REGULAR_FONT_CANDIDATES: Sequence[str] = (
+ASSETS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+    "assets",
+    "fonts",
+)
+
+BRAND_FONT_CANDIDATES: Sequence[str] = (
+    os.path.join(ASSETS_DIR, "BeVietnamPro-Regular.ttf"),
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     "/Library/Fonts/Arial.ttf",
     "C:/Windows/Fonts/arial.ttf",
 )
-BOLD_FONT_CANDIDATES: Sequence[str] = (
+BRAND_BOLD_FONT_CANDIDATES: Sequence[str] = (
+    os.path.join(ASSETS_DIR, "BeVietnamPro-Bold.ttf"),
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/Library/Fonts/Arial Bold.ttf",
     "C:/Windows/Fonts/arialbd.ttf",
 )
 
+# Phonetic symbols (ˈ ʌ ŋ ʃ ə ː θ ð) are absent from most display faces, and a
+# missing glyph renders as tofu rather than failing loudly. The IPA line is
+# therefore pinned to its own family, so swapping the brand font above can
+# never silently break pronunciation. tests/test_theme_fonts.py guards this.
+IPA_FONT_CANDIDATES: Sequence[str] = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    os.path.join(ASSETS_DIR, "BeVietnamPro-Regular.ttf"),
+    "/Library/Fonts/Arial.ttf",
+    "C:/Windows/Fonts/arial.ttf",
+)
+
 
 @dataclass(frozen=True)
 class Theme:
-    """The "stormy morning" palette and the canvas it is painted on.
+    """The "Lên Band" palette and the canvas it is painted on.
 
     1080x1350 is Meta's recommended 4:5 portrait size: it claims noticeably
     more of a phone screen than a square without leaving the feed's aspect
@@ -41,9 +60,9 @@ class Theme:
     top: int = 90
     bottom: int = 70
 
-    background: RGB = (56, 73, 89)     # #384959 — dark blue-gray
-    accent: RGB = (255, 193, 69)       # #FFC145 — warm gold; headings, IPA, taught words
-    text: RGB = (189, 221, 252)        # #BDDDFC — body copy
+    background: RGB = (27, 39, 51)     # #1B2733 — dark slate; makes the gold carry
+    accent: RGB = (255, 193, 69)       # #FFC145 — brand gold; headings, IPA, taught words
+    text: RGB = (232, 241, 248)        # #E8F1F8 — body copy
     muted: RGB = (106, 137, 167)       # #6A89A7 — rules and secondary detail
 
     body_size: int = 40
@@ -67,8 +86,9 @@ class Theme:
     meaning_inset: int = 100   # extra side margin so meanings wrap narrower
     rule_half_width: int = 120
 
-    regular_fonts: Sequence[str] = field(default=REGULAR_FONT_CANDIDATES)
-    bold_fonts: Sequence[str] = field(default=BOLD_FONT_CANDIDATES)
+    brand_fonts: Sequence[str] = field(default=BRAND_FONT_CANDIDATES)
+    brand_bold_fonts: Sequence[str] = field(default=BRAND_BOLD_FONT_CANDIDATES)
+    ipa_fonts: Sequence[str] = field(default=IPA_FONT_CANDIDATES)
 
     @property
     def max_width(self) -> int:
@@ -88,12 +108,23 @@ class Theme:
         return max(1, self.content_height // self.line_height)
 
     def font(self, size: int, bold: bool = False):
-        """First candidate that exists wins; the bundled default is the
-        last resort so rendering never hard-fails on a bare machine."""
-        for path in self.bold_fonts if bold else self.regular_fonts:
-            if os.path.exists(path):
-                try:
-                    return ImageFont.truetype(path, size)
-                except OSError:
-                    continue
-        return ImageFont.load_default()
+        """The brand face, for words, headings and Vietnamese copy."""
+        return _first_available(
+            self.brand_bold_fonts if bold else self.brand_fonts, size
+        )
+
+    def ipa_font(self, size: int):
+        """The phonetic face. Never route non-IPA text through this."""
+        return _first_available(self.ipa_fonts, size)
+
+
+def _first_available(candidates: Sequence[str], size: int):
+    """First candidate that exists wins; the bundled default is the last
+    resort so rendering never hard-fails on a bare machine."""
+    for path in candidates:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except OSError:
+                continue
+    return ImageFont.load_default()
