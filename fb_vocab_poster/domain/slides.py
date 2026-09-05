@@ -7,7 +7,7 @@ that depends on the font metrics of whatever renderer is in use.
 from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
-from .narration import PARAGRAPH, TITLE, WORD, NarrationSegment
+from .narration import OUTRO, PARAGRAPH, WORD, NarrationSegment
 from .lesson import VocabEntry
 
 
@@ -31,8 +31,8 @@ def build_slide_plan(
     plan: List[SlideRequest] = []
 
     for segment in segments:
-        if segment.kind == TITLE:
-            plan.append(SlideRequest(kind=TITLE, duration=segment.duration))
+        if segment.kind == OUTRO:
+            plan.append(SlideRequest(kind=OUTRO, duration=segment.duration))
         elif segment.kind == WORD:
             plan.append(
                 SlideRequest(kind=WORD, duration=segment.duration, vocab=segment.vocab)

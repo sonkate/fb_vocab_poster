@@ -10,11 +10,10 @@ from typing import List, Sequence
 
 from PIL import Image, ImageDraw
 
-from ...domain import PARAGRAPH, TITLE, WORD, Lesson, SlideRequest, VocabEntry
+from ...domain import OUTRO, PARAGRAPH, WORD, Lesson, SlideRequest, VocabEntry
 from . import text as text_utils
 from .theme import Theme
 
-TITLE_HEADING = "New words inside — listen and learn!"
 PARAGRAPH_HEADING = "READ ALONG"
 
 
@@ -32,8 +31,8 @@ class PreparedSlides:
         return len(self.paragraph_pages)
 
     def paint(self, request: SlideRequest, workdir: str, index: int) -> str:
-        if request.kind == TITLE:
-            image = self._title()
+        if request.kind == OUTRO:
+            image = self._outro()
         elif request.kind == WORD:
             image = self._word(request.vocab)
         elif request.kind == PARAGRAPH:
@@ -71,14 +70,50 @@ class PreparedSlides:
         )
         return rule_y + theme.body_offset
 
-    def _title(self) -> Image.Image:
+    def _outro(self) -> Image.Image:
+        """The closing brand card: wordmark, tagline, and what was just taught."""
         theme = self.theme
         image, draw = self._canvas()
-        y = self._heading(draw, self.lesson.topic.upper())
-        body_font = theme.font(theme.body_size)
-        for line in (f"Level: {self.lesson.level}", "", TITLE_HEADING):
-            draw.text((theme.left, y), line, font=body_font, fill=theme.text)
-            y += theme.line_height + theme.entry_gap
+
+        mark_font = theme.font(theme.word_size, bold=True)
+        detail_font = theme.font(theme.body_size)
+
+        lead = f"{theme.brand_lead} "
+        lead_width = draw.textlength(lead, font=mark_font)
+        mark_width = lead_width + draw.textlength(theme.brand_tail, font=mark_font)
+
+        mark_leading = text_utils.line_height(mark_font)
+        detail_leading = text_utils.line_height(detail_font)
+        total = (
+            mark_leading
+            + theme.word_ipa_gap
+            + theme.accent_bar_height
+            + theme.rule_meaning_gap
+            + detail_leading * 2
+        )
+
+        y = (theme.height - total) / 2
+        x = (theme.width - mark_width) / 2
+        draw.text((x, y), lead, font=mark_font, fill=theme.text)
+        draw.text((x + lead_width, y), theme.brand_tail, font=mark_font, fill=theme.accent)
+        y += mark_leading + theme.word_ipa_gap
+
+        draw.rectangle(
+            [(x, y), (x + mark_width, y + theme.accent_bar_height)], fill=theme.accent
+        )
+        y += theme.accent_bar_height + theme.rule_meaning_gap
+
+        y = text_utils.draw_centered(
+            draw, [theme.tagline], detail_font, y, theme.text, theme.width
+        )
+        text_utils.draw_centered(
+            draw,
+            [f"{self.lesson.topic} · {self.lesson.level}"],
+            detail_font,
+            y,
+            theme.muted,
+            theme.width,
+        )
         return image
 
     def _word(self, entry: VocabEntry) -> Image.Image:

@@ -13,8 +13,8 @@ from moviepy.editor import AudioFileClip, concatenate_audioclips
 
 from ...application.ports import DraftRef, Narration, SpeechSynthesizer, Workspace
 from ...domain import (
+    OUTRO,
     PARAGRAPH,
-    TITLE,
     WORD,
     Lesson,
     NarrationSegment,
@@ -45,12 +45,6 @@ class MoviePyNarrationComposer:
         clips: List = []
         segments: List[NarrationSegment] = []
 
-        # The title slide holds in silence before the first word is spoken.
-        clips.append(_silence(self.timing.title_pause))
-        segments.append(
-            NarrationSegment(kind=TITLE, duration=self.timing.title_pause)
-        )
-
         for index, entry in enumerate(lesson.vocab):
             slow = speech[f"word_{index}_slow"]
             fast = speech[f"word_{index}_normal"]
@@ -76,6 +70,12 @@ class MoviePyNarrationComposer:
         clips.append(paragraph)
         segments.append(
             NarrationSegment(kind=PARAGRAPH, duration=paragraph.duration)
+        )
+
+        # The brand card closes in silence, after the lesson has earned it.
+        clips.append(_silence(self.timing.outro_pause))
+        segments.append(
+            NarrationSegment(kind=OUTRO, duration=self.timing.outro_pause)
         )
 
         track = concatenate_audioclips(clips)

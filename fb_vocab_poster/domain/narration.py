@@ -12,7 +12,7 @@ from .lesson import Lesson, VocabEntry
 
 WORD = "word"
 PARAGRAPH = "paragraph"
-TITLE = "title"
+OUTRO = "outro"
 
 
 @dataclass(frozen=True)
@@ -36,7 +36,9 @@ class SpeechCue:
 class NarrationTiming:
     """Pacing policy for the narration, in seconds."""
 
-    title_pause: float = 2.2
+    # The brand card runs after the lesson, not before it: the opening
+    # seconds decide whether a viewer stays, and a static title spends them.
+    outro_pause: float = 2.2
     pause_between_slow_fast: float = 0.5
     pause_after_word: float = 0.8
 

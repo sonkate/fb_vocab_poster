@@ -7,17 +7,25 @@ from fb_vocab_poster.domain import (
 )
 
 TIMELINE = (
-    NarrationSegment(kind="title", duration=2.2),
     NarrationSegment(kind="word", duration=3.0, vocab=VocabEntry(word="hello")),
     NarrationSegment(kind="paragraph", duration=12.0),
+    NarrationSegment(kind="outro", duration=2.2),
 )
 
 
 def test_one_slide_per_narration_segment_when_paragraph_fits_one_page():
     plan = build_slide_plan(TIMELINE, paragraph_pages=1)
 
-    assert [slide.kind for slide in plan] == ["title", "word", "paragraph"]
-    assert [slide.duration for slide in plan] == [2.2, 3.0, 12.0]
+    assert [slide.kind for slide in plan] == ["word", "paragraph", "outro"]
+    assert [slide.duration for slide in plan] == [3.0, 12.0, 2.2]
+
+
+def test_the_brand_card_closes_the_video_rather_than_opening_it():
+    """The first seconds decide whether a viewer stays, so they go to content."""
+    plan = build_slide_plan(TIMELINE, paragraph_pages=2)
+
+    assert plan[0].kind == "word"
+    assert plan[-1].kind == "outro"
 
 
 def test_paragraph_time_is_split_evenly_across_its_pages():

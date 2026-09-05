@@ -88,6 +88,12 @@ class Theme:
     meaning_inset: int = 100   # extra side margin so meanings wrap narrower
     rule_half_width: int = 120
 
+    # The wordmark is two-toned — the tail carries the accent colour, and that
+    # single repeated detail is what makes the page recognisable in a feed.
+    brand_lead: str = "LÊN"
+    brand_tail: str = "BAND"
+    tagline: str = "Mỗi ngày một bậc từ vựng."
+
     brand_fonts: Sequence[str] = field(default=BRAND_FONT_CANDIDATES)
     brand_bold_fonts: Sequence[str] = field(default=BRAND_BOLD_FONT_CANDIDATES)
     ipa_fonts: Sequence[str] = field(default=IPA_FONT_CANDIDATES)

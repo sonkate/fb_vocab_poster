@@ -12,8 +12,8 @@ from .errors import (
 from .lesson import Lesson, VocabEntry, to_entries
 from .level import CEFRLevel
 from .narration import (
+    OUTRO,
     PARAGRAPH,
-    TITLE,
     WORD,
     NarrationSegment,
     NarrationTiming,
@@ -33,10 +33,10 @@ __all__ = [
     "Lesson",
     "NarrationSegment",
     "NarrationTiming",
+    "OUTRO",
     "PARAGRAPH",
     "SlideRequest",
     "SpeechCue",
-    "TITLE",
     "VocabEntry",
     "WORD",
     "build_audio_plan",
