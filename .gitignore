@@ -3,6 +3,17 @@
 *.env
 !.env.example
 
+# Credential files. Blocked by directory AND by name: a key is unrecoverable
+# once it reaches git history, and several sessions share this working tree.
+credentials/*
+!credentials/.gitkeep
+secrets/*
+!secrets/.gitkeep
+service-account*.json
+*-service-account.json
+*.pem
+*.p12
+
 # Python
 __pycache__/
 *.py[cod]
