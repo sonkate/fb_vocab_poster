@@ -2,6 +2,7 @@ import pytest
 
 from fb_vocab_poster.domain import (
     CEFRLevel,
+    FORMATS,
     IncompleteLessonError,
     InvalidLessonFile,
     Lesson,
@@ -92,3 +93,21 @@ def test_render_round_trips_every_format():
         )
 
         assert markdown_format.parse(markdown_format.render(lesson)) == lesson
+
+
+def test_every_format_names_its_own_series():
+    assert all(spec.series_label for spec in FORMATS.values())
+    assert len({spec.series_label for spec in FORMATS.values()}) == len(FORMATS)
+
+
+def test_the_series_caption_carries_the_topic_of_the_episode():
+    spec = FORMATS[LessonFormat.VOCAB]
+
+    assert spec.series_caption("Job Interviews") == "5 từ mỗi ngày · job interviews"
+
+
+def test_a_lesson_without_a_topic_shows_the_series_alone():
+    spec = FORMATS[LessonFormat.MISTAKE]
+
+    assert spec.series_caption("") == "Sai chỗ nào"
+    assert spec.series_caption("   ") == "Sai chỗ nào"

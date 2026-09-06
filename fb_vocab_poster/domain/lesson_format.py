@@ -60,6 +60,15 @@ class FormatSpec:
     repeat_slowly: bool              # read it slowly first, then at speed
     needs_paragraph: bool
     label: str = ""                  # series label drawn on the slide
+    series_label: str = ""           # the show's name, worn at the foot of every slide
+
+    def series_caption(self, topic: str = "") -> str:
+        """What the foot of a slide reads: the series, plus the topic of this
+        particular episode when there is one."""
+        topic = topic.strip().lower()
+        if not (self.series_label and topic):
+            return self.series_label or topic
+        return f"{self.series_label} · {topic}"
 
 
 FORMATS: Dict[LessonFormat, FormatSpec] = {
@@ -70,6 +79,7 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         spoken_column=0,
         repeat_slowly=True,
         needs_paragraph=True,
+        series_label="5 từ mỗi ngày",
     ),
     LessonFormat.MISTAKE: FormatSpec(
         section="Mistakes",
@@ -79,6 +89,7 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         repeat_slowly=False,
         needs_paragraph=False,
         label="SAI CHỖ NÀO?",
+        series_label="Sai chỗ nào",
     ),
     LessonFormat.UPGRADE: FormatSpec(
         section="Upgrades",
@@ -88,6 +99,7 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         repeat_slowly=False,
         needs_paragraph=False,
         label="ĐỪNG NÓI — HÃY NÓI",
+        series_label="Đừng nói · nói",
     ),
 }
 
