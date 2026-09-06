@@ -20,6 +20,7 @@ from ...domain import (
     Lesson,
     SlideRequest,
     VocabEntry,
+    page_word_counts,
 )
 from . import text as text_utils
 from .theme import Theme
@@ -38,8 +39,8 @@ class PreparedSlides:
     paragraph_pages: Sequence[Sequence[Sequence[Fragment]]]
 
     @property
-    def paragraph_page_count(self) -> int:
-        return len(self.paragraph_pages)
+    def paragraph_page_weights(self) -> Sequence[int]:
+        return page_word_counts(self.paragraph_pages)
 
     def paint(self, request: SlideRequest, workdir: str, index: int) -> str:
         if request.kind == OUTRO:

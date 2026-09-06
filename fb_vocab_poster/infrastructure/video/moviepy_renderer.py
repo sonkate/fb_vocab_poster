@@ -28,7 +28,7 @@ class MoviePyVideoRenderer:
         out_path = self.workspace.video(ref.basename)
 
         prepared = self.painter.prepare(lesson)
-        plan = build_slide_plan(narration.segments, prepared.paragraph_page_count)
+        plan = build_slide_plan(narration.segments, prepared.paragraph_page_weights)
 
         clips: List[ImageClip] = [
             ImageClip(prepared.paint(request, workdir, index)).set_duration(request.duration)

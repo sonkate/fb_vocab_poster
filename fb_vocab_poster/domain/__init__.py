@@ -31,7 +31,7 @@ from .narration import (
     total_duration,
     word_segment_duration,
 )
-from .slides import SlideRequest, build_slide_plan
+from .slides import SlideRequest, build_slide_plan, page_word_counts
 
 __all__ = [
     "build_audio_plan",
@@ -50,6 +50,7 @@ __all__ = [
     "NarrationSegment",
     "NarrationTiming",
     "OUTRO",
+    "page_word_counts",
     "PARAGRAPH",
     "SlideRequest",
     "spec_for",
