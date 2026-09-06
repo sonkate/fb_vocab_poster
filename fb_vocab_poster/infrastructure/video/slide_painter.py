@@ -243,12 +243,12 @@ class PreparedSlides:
             )
 
         y = content_top + (content_bottom - content_top - total) / 2
-        y = text_utils.draw_centered(draw, word_lines, word_font, y, theme.text, theme.width)
+        y = text_utils.draw_centered(draw, word_lines, word_font, y, theme.accent, theme.width)
         y += theme.word_ipa_gap
 
         if ipa_lines:
             y = text_utils.draw_centered(
-                draw, ipa_lines, ipa_font, y, theme.accent, theme.width
+                draw, ipa_lines, ipa_font, y, theme.muted, theme.width
             )
             y += theme.ipa_rule_gap
 
@@ -256,12 +256,12 @@ class PreparedSlides:
             centre = theme.width / 2
             draw.line(
                 [(centre - theme.rule_half_width, y), (centre + theme.rule_half_width, y)],
-                fill=theme.muted,
+                fill=theme.accent_soft,
                 width=theme.rule_thickness,
             )
             y += theme.rule_meaning_gap
             text_utils.draw_centered(
-                draw, meaning_lines, meaning_font, y, theme.muted, theme.width
+                draw, meaning_lines, meaning_font, y, theme.text_soft, theme.width
             )
 
         return image

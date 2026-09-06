@@ -67,7 +67,8 @@ class Theme:
     background: RGB = (27, 39, 51)     # #1B2733 — dark slate; makes the gold carry
     accent: RGB = (255, 193, 69)       # #FFC145 — brand gold; headings, IPA, taught words
     text: RGB = (232, 241, 248)        # #E8F1F8 — body copy
-    muted: RGB = (106, 137, 167)       # #6A89A7 — rules and secondary detail
+    muted: RGB = (106, 137, 167)       # #6A89A7 — rules and the IPA line
+    text_soft: RGB = (169, 189, 205)   # #A9BDCD — a meaning, read after the word
     danger: RGB = (255, 122, 107)      # #FF7A6B — the wrong half of a contrast slide
 
     # One colour per CEFR band, worn by the level chip. The chip is a filled
@@ -141,6 +142,16 @@ class Theme:
     brand_fonts: Sequence[str] = field(default=BRAND_FONT_CANDIDATES)
     brand_bold_fonts: Sequence[str] = field(default=BRAND_BOLD_FONT_CANDIDATES)
     ipa_fonts: Sequence[str] = field(default=IPA_FONT_CANDIDATES)
+
+    @property
+    def accent_soft(self) -> RGB:
+        """Accent at half strength. Pillow draws onto an RGB canvas with no
+        alpha, and blending against a known background is the same result as
+        compositing without needing a second layer for one rule."""
+        return tuple(
+            (channel + ground) // 2
+            for channel, ground in zip(self.accent, self.background)
+        )
 
     @property
     def max_width(self) -> int:
