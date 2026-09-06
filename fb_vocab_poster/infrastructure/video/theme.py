@@ -77,47 +77,60 @@ class Theme:
     level_c: RGB = (180, 139, 255)     # #B48BFF — violet
     level_text: RGB = (18, 32, 43)     # #12202B — type sitting on a level colour
 
-    body_size: int = 40
-    line_height: int = 56
+    body_size: int = 52
+    line_height: int = 74
     entry_gap: int = 16
-    heading_size: int = 56
-    word_size: int = 88
-    ipa_size: int = 44
-    meaning_size: int = 38
+    heading_size: int = 68
+
+    # The taught word is the hero of its slide and is set to fill the frame.
+    # `word_size` is therefore a ceiling, not a fixed size: a long word steps
+    # down towards `word_size_min` rather than wrapping onto a second line,
+    # which reads far worse than a slightly smaller word.
+    word_size: int = 170
+    word_size_min: int = 96
+    ipa_size: int = 68
+    meaning_size: int = 56
 
     # Contrast slides (mistake, upgrade) stack label / before / after / note.
     # Both halves are often whole sentences, so they sit well below word_size.
-    label_size: int = 34
-    contrast_from_size: int = 48
-    contrast_to_size: int = 64
+    label_size: int = 42
+    contrast_from_size: int = 60
+    contrast_to_size: int = 80
 
     # Fixed chrome: the wordmark top left, the level chip top right, the series
     # label along the foot. Every teaching slide wears all three in the same
     # place, which is the whole of the brand's recognisability in a feed.
-    chrome_size: int = 38
+    chrome_size: int = 44
     chrome_rule_gap: int = 12      # wordmark down to the gold rule under it
-    chrome_rule_width: int = 96
-    chrome_rule_height: int = 6
-    chip_size: int = 32
+    chrome_rule_width: int = 94
+    chrome_rule_height: int = 11
+    chip_size: int = 40
     chip_padding_x: int = 28
     chip_padding_y: int = 12
     chip_radius: int = 20
-    series_size: int = 28
+    series_size: int = 35
     series_tracking: int = 6       # extra room between the foot label's letters
     chrome_gap: int = 70           # clear space between the chrome and the content
 
-    rule_offset: int = 100     # distance from `top` down to the heading rule
+    rule_offset: int = 116     # distance from `top` down to the heading rule
     body_offset: int = 50      # distance from that rule down to body copy
     accent_bar_height: int = 14
 
     # Vertical gaps stacked down a word slide: word -> IPA -> rule -> meaning.
     # The slide centres the whole stack, so these describe its internal
     # spacing rather than any absolute position on the canvas.
-    word_ipa_gap: int = 15
-    ipa_rule_gap: int = 35
-    rule_meaning_gap: int = 55
+    word_ipa_gap: int = 28
+    ipa_rule_gap: int = 48
+    rule_meaning_gap: int = 60
     meaning_inset: int = 100   # extra side margin so meanings wrap narrower
-    rule_half_width: int = 120
+    rule_half_width: int = 110
+    rule_thickness: int = 6
+
+    # The outro borrows the word slide's gaps but pins its own type sizes: it
+    # is the only slide where the mark is the content, so it must not grow
+    # with the hero word or the read-along copy.
+    outro_mark_size: int = 88
+    outro_detail_size: int = 40
 
     # The wordmark is two-toned — the tail carries the accent colour, and that
     # single repeated detail is what makes the page recognisable in a feed.

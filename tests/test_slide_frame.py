@@ -3,6 +3,7 @@ three marks are asserted on real pixels rather than trusted to survive the
 next layout change."""
 from fb_vocab_poster.domain import CEFRLevel, Lesson, VocabEntry, OUTRO, WORD
 from fb_vocab_poster.infrastructure.video import PillowSlidePainter, Theme, REEL_HEIGHT
+from fb_vocab_poster.infrastructure.video.text import leading
 
 THEME = Theme(height=REEL_HEIGHT)
 
@@ -32,9 +33,14 @@ def _rows_with_content(image):
 
 
 def test_the_chip_wears_the_colour_of_the_lesson_level():
+    # Sampled in the chip's right-hand padding at half its height: clear of the
+    # rounded corners and of the label, so the probe survives a type-size
+    # change instead of landing on an antialiased glyph edge.
+    x = THEME.width - THEME.right - THEME.chip_padding_x // 2
+    y = THEME.top + (leading(THEME.chip_size) + THEME.chip_padding_y * 2) // 2
+
     for level in CEFRLevel:
-        image = slide(WORD, level)
-        chip = image.getpixel((THEME.width - THEME.right - 40, THEME.top + 30))
+        chip = slide(WORD, level).getpixel((x, y))
 
         assert chip == THEME.level_color(level)
 

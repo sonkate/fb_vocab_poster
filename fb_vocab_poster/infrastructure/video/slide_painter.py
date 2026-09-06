@@ -153,8 +153,8 @@ class PreparedSlides:
         theme = self.theme
         image, draw = self._canvas()
 
-        mark_font = theme.font(theme.word_size, bold=True)
-        detail_font = theme.font(theme.body_size)
+        mark_font = theme.font(theme.outro_mark_size, bold=True)
+        detail_font = theme.font(theme.outro_detail_size)
 
         lead = f"{theme.brand_lead} "
         lead_width = draw.textlength(lead, font=mark_font)
@@ -194,12 +194,25 @@ class PreparedSlides:
         )
         return image
 
+    def _fit_word_font(self, draw, word: str):
+        """Largest size at or below `word_size` that keeps the word on one
+        line. Text width is near enough linear in point size that scaling by
+        the measured overflow lands in one step, and flooring keeps it inside
+        the frame."""
+        theme = self.theme
+        font = theme.font(theme.word_size, bold=True)
+        width = draw.textlength(word, font=font)
+        if width <= theme.max_width:
+            return font
+        fitted = int(theme.word_size * theme.max_width / width)
+        return theme.font(max(theme.word_size_min, fitted), bold=True)
+
     def _word(self, entry: VocabEntry) -> Image.Image:
         theme = self.theme
         image, draw = self._canvas()
         content_top, content_bottom = self._frame(draw)
 
-        word_font = theme.font(theme.word_size, bold=True)
+        word_font = self._fit_word_font(draw, entry.word)
         ipa_font = theme.ipa_font(theme.ipa_size)
         meaning_font = theme.font(theme.meaning_size)
 
@@ -244,7 +257,7 @@ class PreparedSlides:
             draw.line(
                 [(centre - theme.rule_half_width, y), (centre + theme.rule_half_width, y)],
                 fill=theme.muted,
-                width=2,
+                width=theme.rule_thickness,
             )
             y += theme.rule_meaning_gap
             text_utils.draw_centered(
