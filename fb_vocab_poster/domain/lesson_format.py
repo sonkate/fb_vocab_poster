@@ -59,7 +59,6 @@ class FormatSpec:
     spoken_column: int               # which column the narrator reads
     repeat_slowly: bool              # read it slowly first, then at speed
     needs_paragraph: bool
-    label: str = ""                  # series label drawn on the slide
     series_label: str = ""           # the show's name, worn at the foot of every slide
 
     def series_caption(self, topic: str = "") -> str:
@@ -88,7 +87,6 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         spoken_column=1,
         repeat_slowly=False,
         needs_paragraph=False,
-        label="SAI CHỖ NÀO?",
         series_label="Sai chỗ nào",
     ),
     LessonFormat.UPGRADE: FormatSpec(
@@ -98,7 +96,6 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         spoken_column=1,
         repeat_slowly=False,
         needs_paragraph=False,
-        label="ĐỪNG NÓI — HÃY NÓI",
         series_label="Đừng nói · nói",
     ),
 }

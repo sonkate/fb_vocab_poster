@@ -269,15 +269,13 @@ class PreparedSlides:
     def _contrast(self, entry: VocabEntry) -> Image.Image:
         """Before above, after below: the shared layout of every format that
         teaches by opposition — a mistake and its correction, a weak phrase and
-        its upgrade. The format's own label says which one the viewer is
-        looking at."""
+        its upgrade. Which of the two the viewer is looking at is named by the
+        series label at the foot, drawn by `_frame`."""
         theme = self.theme
-        spec = self.lesson.spec
         image, draw = self._canvas()
         content_top, content_bottom = self._frame(draw)
 
         before, after, note = entry.columns
-        label_font = theme.font(theme.label_size, bold=True)
         from_font = theme.font(theme.contrast_from_size)
         arrow_font = theme.ipa_font(theme.contrast_from_size)
         to_font = theme.font(theme.contrast_to_size, bold=True)
@@ -294,9 +292,7 @@ class PreparedSlides:
         )
 
         total = (
-            text_utils.line_height(label_font)
-            + theme.rule_meaning_gap
-            + text_utils.block_height(before_lines, from_font)
+            text_utils.block_height(before_lines, from_font)
             + text_utils.line_height(arrow_font)
             + text_utils.block_height(after_lines, to_font)
         )
@@ -304,10 +300,6 @@ class PreparedSlides:
             total += theme.rule_meaning_gap + text_utils.block_height(note_lines, note_font)
 
         y = content_top + (content_bottom - content_top - total) / 2
-        y = text_utils.draw_centered(
-            draw, [spec.label], label_font, y, theme.danger, theme.width
-        )
-        y += theme.rule_meaning_gap
         y = text_utils.draw_centered(
             draw, before_lines, from_font, y, theme.danger, theme.width
         )

@@ -92,9 +92,8 @@ class Theme:
     ipa_size: int = 68
     meaning_size: int = 56
 
-    # Contrast slides (mistake, upgrade) stack label / before / after / note.
-    # Both halves are often whole sentences, so they sit well below word_size.
-    label_size: int = 42
+    # Contrast slides (mistake, upgrade) stack before / after / note. Both
+    # halves are often whole sentences, so they sit well below word_size.
     contrast_from_size: int = 60
     contrast_to_size: int = 80
 
