@@ -20,7 +20,11 @@ from .infrastructure.content import (
     MarkdownDraftRepository,
     TemplateDrafter,
 )
-from .infrastructure.ledger import DraftFolderLedger
+from .infrastructure.ledger import (
+    CombinedLedger,
+    DraftFolderLedger,
+    FirestoreVocabularyLedger,
+)
 from .infrastructure.publishing import FacebookPagePublisher
 from .infrastructure.video import (
     FEED_HEIGHT,
@@ -80,8 +84,23 @@ class Container:
     @cached_property
     def ledger(self) -> VocabularyLedger:
         """Every draft ever written is a record of what that topic has taught,
-        so the folder alone is enough to stop a word being taught twice."""
-        return DraftFolderLedger(drafts_dir=self.settings.drafts_dir)
+        so the folder alone is enough to stop a word being taught twice.
+
+        With credentials the same history also goes to Firestore, which
+        outlives one machine's `drafts/`. Both are read: the database starts
+        empty, and the lessons already on disk still count."""
+        folder = DraftFolderLedger(drafts_dir=self.settings.drafts_dir)
+        if not self.settings.can_remember_vocabulary:
+            return folder
+        return CombinedLedger(
+            ledgers=(
+                folder,
+                FirestoreVocabularyLedger(
+                    credentials_path=self.settings.firestore_credentials,
+                    collection=self.settings.firestore_collection,
+                ),
+            )
+        )
 
     @cached_property
     def narrator(self) -> MoviePyNarrationComposer:
