@@ -109,7 +109,7 @@ class Theme:
     chip_padding_y: int = 12
     chip_radius: int = 20
     series_size: int = 35
-    series_tracking: int = 6       # extra room between the foot label's letters
+    series_tracking: int = 3       # extra room between the foot label's letters
     chrome_gap: int = 70           # clear space between the chrome and the content
 
     rule_offset: int = 116     # distance from `top` down to the heading rule
@@ -123,7 +123,7 @@ class Theme:
     ipa_rule_gap: int = 48
     rule_meaning_gap: int = 60
     meaning_inset: int = 100   # extra side margin so meanings wrap narrower
-    rule_half_width: int = 110
+    rule_half_width: int = 94
     rule_thickness: int = 6
 
     # The outro borrows the word slide's gaps but pins its own type sizes: it
