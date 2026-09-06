@@ -6,7 +6,7 @@ and what each requested slide looks like as a PNG.
 """
 import os
 from dataclasses import dataclass
-from typing import List, Sequence
+from typing import List, Sequence, Tuple
 
 from PIL import Image, ImageDraw
 
@@ -64,17 +64,79 @@ class PreparedSlides:
         image = Image.new("RGB", (theme.width, theme.height), theme.background)
         return image, ImageDraw.Draw(image)
 
-    def _heading(self, draw, title: str) -> int:
+    def _frame(self, draw) -> Tuple[float, float]:
+        """Draws the fixed chrome — wordmark top left, level chip top right,
+        series label along the foot — and returns the band of canvas left for
+        the slide's own content.
+
+        Three formats look nothing alike, but these three marks never move.
+        That is what makes a slide recognisable a second into a scroll, and it
+        is also what anchors the top and bottom of the canvas: content centres
+        in the band between them rather than floating in an empty screen.
+        """
+        theme = self.theme
+        draw.rectangle([(0, 0), (theme.width, theme.accent_bar_height)], fill=theme.accent)
+
+        mark_font = theme.font(theme.chrome_size, bold=True)
+        lead = f"{theme.brand_lead} "
+        lead_width = draw.textlength(lead, font=mark_font)
+        draw.text((theme.left, theme.top), lead, font=mark_font, fill=theme.text)
+        draw.text(
+            (theme.left + lead_width, theme.top),
+            theme.brand_tail,
+            font=mark_font,
+            fill=theme.accent,
+        )
+        rule_y = theme.top + text_utils.line_height(mark_font) + theme.chrome_rule_gap
+        draw.rectangle(
+            [
+                (theme.left, rule_y),
+                (theme.left + theme.chrome_rule_width, rule_y + theme.chrome_rule_height),
+            ],
+            fill=theme.accent,
+        )
+
+        chip_font = theme.font(theme.chip_size, bold=True)
+        level = str(self.lesson.level)
+        chip_width = draw.textlength(level, font=chip_font) + theme.chip_padding_x * 2
+        chip_height = text_utils.line_height(chip_font) + theme.chip_padding_y * 2
+        chip_right = theme.width - theme.right
+        draw.rounded_rectangle(
+            [(chip_right - chip_width, theme.top), (chip_right, theme.top + chip_height)],
+            radius=theme.chip_radius,
+            fill=theme.level_color(self.lesson.level),
+        )
+        draw.text(
+            (chip_right - chip_width + theme.chip_padding_x, theme.top + theme.chip_padding_y),
+            level,
+            font=chip_font,
+            fill=theme.level_text,
+        )
+
+        series_font = theme.font(theme.series_size)
+        text_utils.draw_tracked(
+            draw,
+            self.lesson.spec.series_caption(self.lesson.topic).upper(),
+            series_font,
+            theme.height - theme.bottom - text_utils.line_height(series_font),
+            theme.muted,
+            theme.width,
+            theme.series_tracking,
+        )
+
+        return theme.content_top, theme.content_bottom
+
+    def _heading(self, draw, title: str, top: float) -> int:
         """Draws a left-aligned heading with a rule under it, returning the y
         where body copy starts."""
         theme = self.theme
         draw.text(
-            (theme.left, theme.top),
+            (theme.left, top),
             title,
             font=theme.font(theme.heading_size, bold=True),
             fill=theme.accent,
         )
-        rule_y = theme.top + theme.rule_offset
+        rule_y = top + theme.rule_offset
         draw.line(
             [(theme.left, rule_y), (theme.width - theme.right, rule_y)],
             fill=theme.muted,
@@ -83,7 +145,11 @@ class PreparedSlides:
         return rule_y + theme.body_offset
 
     def _outro(self) -> Image.Image:
-        """The closing brand card: wordmark, tagline, and what was just taught."""
+        """The closing brand card: wordmark, tagline, and what was just taught.
+
+        The only slide that wears no frame: it *is* the wordmark, full size and
+        centred, so a corner copy of it would just be the same mark twice.
+        """
         theme = self.theme
         image, draw = self._canvas()
 
@@ -131,7 +197,7 @@ class PreparedSlides:
     def _word(self, entry: VocabEntry) -> Image.Image:
         theme = self.theme
         image, draw = self._canvas()
-        draw.rectangle([(0, 0), (theme.width, theme.accent_bar_height)], fill=theme.accent)
+        content_top, content_bottom = self._frame(draw)
 
         word_font = theme.font(theme.word_size, bold=True)
         ipa_font = theme.ipa_font(theme.ipa_size)
@@ -163,7 +229,7 @@ class PreparedSlides:
                 meaning_lines, meaning_font
             )
 
-        y = (theme.height - total) / 2
+        y = content_top + (content_bottom - content_top - total) / 2
         y = text_utils.draw_centered(draw, word_lines, word_font, y, theme.text, theme.width)
         y += theme.word_ipa_gap
 
@@ -195,7 +261,7 @@ class PreparedSlides:
         theme = self.theme
         spec = self.lesson.spec
         image, draw = self._canvas()
-        draw.rectangle([(0, 0), (theme.width, theme.accent_bar_height)], fill=theme.accent)
+        content_top, content_bottom = self._frame(draw)
 
         before, after, note = entry.columns
         label_font = theme.font(theme.label_size, bold=True)
@@ -224,7 +290,7 @@ class PreparedSlides:
         if note_lines:
             total += theme.rule_meaning_gap + text_utils.block_height(note_lines, note_font)
 
-        y = (theme.height - total) / 2
+        y = content_top + (content_bottom - content_top - total) / 2
         y = text_utils.draw_centered(
             draw, [spec.label], label_font, y, theme.danger, theme.width
         )
@@ -249,12 +315,15 @@ class PreparedSlides:
     def _paragraph(self, page: Sequence[Sequence[text_utils.Token]]) -> Image.Image:
         theme = self.theme
         image, draw = self._canvas()
-        y = self._heading(draw, PARAGRAPH_HEADING)
+        content_top, content_bottom = self._frame(draw)
 
-        # A page rarely fills a 9:16 canvas, and text pinned under the heading
-        # leaves the bottom two-thirds empty. Centring the block in whatever
-        # room is left keeps the slide balanced at any aspect ratio.
-        y += max(0, (theme.content_height - len(page) * theme.line_height) / 2)
+        # Heading, rule and text move as one block: a page rarely fills a 9:16
+        # canvas, and centring the whole thing in the content band keeps the
+        # heading over its own copy rather than stranded at the top edge.
+        total = theme.rule_offset + theme.body_offset + len(page) * theme.line_height
+        y = self._heading(
+            draw, PARAGRAPH_HEADING, content_top + max(0, (content_bottom - content_top - total) / 2)
+        )
 
         body_font = theme.font(theme.body_size)
         bold_body_font = theme.font(theme.body_size, bold=True)

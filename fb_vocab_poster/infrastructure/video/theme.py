@@ -6,6 +6,8 @@ from typing import Sequence, Tuple
 
 from PIL import ImageFont
 
+from .text import leading
+
 RGB = Tuple[int, int, int]
 
 SQUARE_HEIGHT = 1080   # 1:1, the original feed post
@@ -89,6 +91,21 @@ class Theme:
     contrast_from_size: int = 48
     contrast_to_size: int = 64
 
+    # Fixed chrome: the wordmark top left, the level chip top right, the series
+    # label along the foot. Every teaching slide wears all three in the same
+    # place, which is the whole of the brand's recognisability in a feed.
+    chrome_size: int = 38
+    chrome_rule_gap: int = 12      # wordmark down to the gold rule under it
+    chrome_rule_width: int = 96
+    chrome_rule_height: int = 6
+    chip_size: int = 32
+    chip_padding_x: int = 28
+    chip_padding_y: int = 12
+    chip_radius: int = 20
+    series_size: int = 28
+    series_tracking: int = 6       # extra room between the foot label's letters
+    chrome_gap: int = 70           # clear space between the chrome and the content
+
     rule_offset: int = 100     # distance from `top` down to the heading rule
     body_offset: int = 50      # distance from that rule down to body copy
     accent_bar_height: int = 14
@@ -117,13 +134,30 @@ class Theme:
         return self.width - self.left - self.right
 
     @property
+    def chrome_height(self) -> int:
+        """Room the top chrome claims below `top`. The chip and the wordmark
+        block are near enough the same height that either can be the taller."""
+        mark = leading(self.chrome_size) + self.chrome_rule_gap + self.chrome_rule_height
+        chip = leading(self.chip_size) + self.chip_padding_y * 2
+        return max(mark, chip)
+
+    @property
+    def content_top(self) -> int:
+        """Top edge of the band a slide may draw its own content in."""
+        return self.top + self.chrome_height + self.chrome_gap
+
+    @property
+    def content_bottom(self) -> int:
+        return self.height - self.bottom - leading(self.series_size) - self.chrome_gap
+
+    @property
     def body_top(self) -> int:
         """Where body copy starts on a slide that has a heading."""
-        return self.top + self.rule_offset + self.body_offset
+        return self.content_top + self.rule_offset + self.body_offset
 
     @property
     def content_height(self) -> int:
-        return self.height - self.body_top - self.bottom
+        return self.content_bottom - self.body_top
 
     @property
     def lines_per_page(self) -> int:
