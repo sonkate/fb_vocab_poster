@@ -12,6 +12,7 @@ help:
 	@echo "  make draft TOPIC=\"Travel\" LEVEL=B1   - python main.py draft"
 	@echo "  make build FILE=drafts/xxx.md          - python main.py build"
 	@echo "  make publish FILE=drafts/xxx.md         - python main.py publish"
+	@echo "  make publish FILE=drafts/xxx.md SKIP_RENDER=1  - reuse the video from a previous build instead of re-rendering"
 	@echo "  make clean    - remove caches and __pycache__"
 
 $(PYTHON):
@@ -32,7 +33,7 @@ build: venv
 	$(PYTHON) main.py build $(FILE)
 
 publish: venv
-	$(PYTHON) main.py publish $(FILE)
+	$(PYTHON) main.py publish $(FILE) $(if $(SKIP_RENDER),--skip-render,)
 
 clean:
 	find . -type d -name '__pycache__' -not -path './venv/*' -exec rm -rf {} +

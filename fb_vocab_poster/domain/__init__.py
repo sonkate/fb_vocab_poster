@@ -8,6 +8,7 @@ from .errors import (
     IncompleteLessonError,
     InvalidLessonFile,
     InvalidLevelError,
+    StaleRenderError,
 )
 from .lesson import Fragment, Lesson, VocabEntry, to_entries
 from .lesson_format import (
@@ -53,6 +54,7 @@ __all__ = [
     "SlideRequest",
     "spec_for",
     "SpeechCue",
+    "StaleRenderError",
     "to_entries",
     "total_duration",
     "UPGRADE",

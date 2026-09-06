@@ -15,3 +15,7 @@ class IncompleteLessonError(DomainError):
 
 class InvalidLessonFile(DomainError):
     """A stored draft could not be read back as a lesson."""
+
+
+class StaleRenderError(DomainError):
+    """No rendered video exists for a draft, or it predates the draft's last edit."""

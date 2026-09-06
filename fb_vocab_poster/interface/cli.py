@@ -39,6 +39,12 @@ def build_parser() -> argparse.ArgumentParser:
         "publish", help="render a draft and post it to your Facebook Page"
     )
     publish.add_argument("draft", help="path to a draft .md file")
+    publish.add_argument(
+        "--skip-render",
+        action="store_true",
+        help="reuse output/<basename>.mp4 from a previous build instead of "
+        "re-rendering, if it is newer than the draft",
+    )
 
     commands.add_parser(
         "backfill-ledger",
@@ -89,7 +95,7 @@ def _build(container: Container, args) -> int:
 
 
 def _publish(container: Container, args) -> int:
-    rendered, receipt = container.publish_lesson(args.draft)
+    rendered, receipt = container.publish_lesson(args.draft, skip_render=args.skip_render)
     container.reporter.result(f"Video ready: {rendered.video_path}")
     container.reporter.result(f"Posted! Facebook video id: {receipt.post_id}")
     return 0

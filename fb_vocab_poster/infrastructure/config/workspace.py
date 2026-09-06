@@ -3,6 +3,7 @@ cases refuse to look up for themselves."""
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,14 @@ class FileSystemWorkspace:
 
     def slides_workdir(self, basename: str) -> str:
         return self._ensure(os.path.join(self.output_dir, f"_slides_{basename}"))
+
+    def fresh_video(self, basename: str, since: datetime) -> Optional[str]:
+        path = self.video(basename)
+        try:
+            rendered_at = datetime.fromtimestamp(os.path.getmtime(path))
+        except OSError:
+            return None
+        return path if rendered_at >= since else None
 
 
 class SystemClock:

@@ -79,6 +79,8 @@ class DraftRepository(Protocol):
 
     def identifiers(self) -> Sequence[str]: ...
 
+    def modified_at(self, identifier: str) -> datetime: ...
+
 
 class VocabularyLedger(Protocol):
     """Remembers what a topic has already taught, so it is never taught twice.
@@ -126,6 +128,11 @@ class Workspace(Protocol):
     def video(self, basename: str) -> str: ...
 
     def slides_workdir(self, basename: str) -> str: ...
+
+    def fresh_video(self, basename: str, since: datetime) -> Optional[str]:
+        """Path to an already-rendered video for basename, if one exists and
+        is not older than `since` — otherwise None."""
+        ...
 
 
 class Clock(Protocol):

@@ -171,6 +171,8 @@ class Container:
     def publish_lesson(self) -> PublishLesson:
         return PublishLesson(
             render=self.render_lesson,
+            repository=self.repository,
+            workspace=self.workspace,
             publisher=self.publisher,
             reporter=self.reporter,
         )

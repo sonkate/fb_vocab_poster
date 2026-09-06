@@ -46,3 +46,6 @@ class MarkdownDraftRepository:
     def reference(self, identifier: str) -> DraftRef:
         basename = os.path.splitext(os.path.basename(identifier))[0]
         return DraftRef(identifier=identifier, basename=basename)
+
+    def modified_at(self, identifier: str) -> datetime:
+        return datetime.fromtimestamp(os.path.getmtime(identifier))

@@ -21,6 +21,7 @@ from fb_vocab_poster.domain import (
     Lesson,
     LessonFormat,
     NarrationSegment,
+    StaleRenderError,
     VocabEntry,
 )
 
@@ -52,6 +53,9 @@ class FakeRepository:
 
     def identifiers(self):
         return ["drafts/travel_B1.md"]
+
+    def modified_at(self, identifier):
+        return datetime(2026, 1, 1, 0, 0, 0)
 
 
 class FakeDrafter:
@@ -89,6 +93,26 @@ class FakeNarrator:
 class FakeVideoRenderer:
     def render(self, lesson, narration, ref):
         return f"output/{ref.basename}.mp4"
+
+
+class FakeWorkspace:
+    """Controls whether `PublishLesson` finds a reusable video for skip_render."""
+
+    def __init__(self, fresh_path=None):
+        self.fresh_path = fresh_path
+
+    def narration_audio(self, basename):
+        return f"output/{basename}.mp3"
+
+    def fresh_video(self, basename, since):
+        return self.fresh_path
+
+
+class ExplodingRender:
+    """Stands in for `RenderLesson` in tests that must prove it never ran."""
+
+    def __call__(self, identifier):
+        raise AssertionError("render must not run when skip_render reuses a video")
 
 
 class FakePublisher:
@@ -164,16 +188,46 @@ def test_rendering_refuses_an_unfinished_draft_before_synthesising_anything():
         make_render(FakeRepository(lesson=empty))("drafts/travel_B1.md")
 
 
+def make_publish(render=None, repository=None, workspace=None, publisher=None):
+    return PublishLesson(
+        render=render or make_render(),
+        repository=repository or FakeRepository(),
+        workspace=workspace or FakeWorkspace(),
+        publisher=publisher or FakePublisher(),
+        reporter=SilentReporter(),
+    )
+
+
 def test_publishing_sends_the_rendered_video_with_the_lesson_caption():
     publisher = FakePublisher()
 
-    rendered, receipt = PublishLesson(
-        render=make_render(), publisher=publisher, reporter=SilentReporter()
-    )("drafts/travel_B1.md")
+    rendered, receipt = make_publish(publisher=publisher)("drafts/travel_B1.md")
 
     assert publisher.posted == [("output/travel_B1.mp4", "Level: B1 #travel")]
     assert receipt.post_id == "99"
     assert rendered.video_path == "output/travel_B1.mp4"
+
+
+def test_publishing_with_skip_render_reuses_an_existing_video_without_rendering_again():
+    publisher = FakePublisher()
+    workspace = FakeWorkspace(fresh_path="output/travel_B1.mp4")
+
+    rendered, receipt = make_publish(
+        render=ExplodingRender(), workspace=workspace, publisher=publisher
+    )("drafts/travel_B1.md", skip_render=True)
+
+    assert publisher.posted == [("output/travel_B1.mp4", "Level: B1 #travel")]
+    assert receipt.post_id == "99"
+    assert rendered.video_path == "output/travel_B1.mp4"
+
+
+def test_publishing_with_skip_render_refuses_a_missing_or_stale_video():
+    workspace = FakeWorkspace(fresh_path=None)
+
+    with pytest.raises(StaleRenderError):
+        make_publish(render=ExplodingRender(), workspace=workspace)(
+            "drafts/travel_B1.md", skip_render=True
+        )
 
 
 def test_words_already_taught_are_handed_to_the_drafter_to_avoid():
