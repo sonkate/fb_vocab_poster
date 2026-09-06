@@ -50,10 +50,10 @@ class Theme:
     """The "Lên Band" palette and the canvas it is painted on.
 
     Width stays at 1080 whatever the height, so the type scale and margins
-    below never need retuning — only vertical room changes. Pass
-    `height=REEL_HEIGHT` for 9:16 Reels (what `container.py` builds),
-    `FEED_HEIGHT` for a 4:5 feed post, or `SQUARE_HEIGHT` for the original
-    square. Every layout below derives from these two numbers rather than
+    below never need retuning — only vertical room changes. The default is
+    `FEED_HEIGHT`, the 4:5 feed post `container.py` builds; pass
+    `REEL_HEIGHT` for 9:16 Reels or `SQUARE_HEIGHT` for the original square.
+    Every layout below derives from these two numbers rather than
     hard-coding a canvas size.
     """
 
