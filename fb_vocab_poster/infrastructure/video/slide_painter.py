@@ -16,6 +16,7 @@ from ...domain import (
     PARAGRAPH,
     UPGRADE,
     WORD,
+    Fragment,
     Lesson,
     SlideRequest,
     VocabEntry,
@@ -34,7 +35,7 @@ class PreparedSlides:
 
     theme: Theme
     lesson: Lesson
-    paragraph_pages: Sequence[Sequence[Sequence[text_utils.Token]]]
+    paragraph_pages: Sequence[Sequence[Sequence[Fragment]]]
 
     @property
     def paragraph_page_count(self) -> int:
@@ -317,7 +318,7 @@ class PreparedSlides:
             )
         return image
 
-    def _paragraph(self, page: Sequence[Sequence[text_utils.Token]]) -> Image.Image:
+    def _paragraph(self, page: Sequence[Sequence[Fragment]]) -> Image.Image:
         theme = self.theme
         image, draw = self._canvas()
         content_top, content_bottom = self._frame(draw)

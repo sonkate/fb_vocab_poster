@@ -7,7 +7,20 @@ from .errors import IncompleteLessonError
 from .lesson_format import FORMATS, LessonFormat
 from .level import CEFRLevel
 
-_WORD_CHARS = re.compile(r"[^\w']")
+_BOLD_SPAN = re.compile(r"\*\*(.+?)\*\*", re.DOTALL)
+
+
+@dataclass(frozen=True)
+class Fragment:
+    """A run of paragraph text drawn as one piece, and whether it is a taught
+    word. Punctuation sits in its own fragment so `**brother**.` colours the
+    word without dragging the full stop in with it; `starts_word` is false for
+    that full stop, which is how a renderer knows not to space it away from the
+    word it follows."""
+
+    text: str
+    highlighted: bool = False
+    starts_word: bool = True
 
 
 @dataclass(frozen=True)
@@ -33,11 +46,6 @@ class VocabEntry:
     def spoken(self) -> str:
         """The text handed to a speech synthesiser."""
         return self.word.strip()
-
-    @property
-    def lookup_key(self) -> str:
-        """Normalised form used to spot this word inside the paragraph."""
-        return self.word.strip().lower()
 
 
 @dataclass(frozen=True)
@@ -73,18 +81,43 @@ class Lesson:
     def post_text(self) -> str:
         """What a social post should say: the caption, or the paragraph if the
         caption was left empty."""
-        return self.caption.strip() or self.paragraph.strip()
+        return self.caption.strip() or self.plain_paragraph.strip()
 
     @property
-    def vocab_keys(self) -> frozenset:
-        return frozenset(entry.lookup_key for entry in self.vocab)
+    def plain_paragraph(self) -> str:
+        """The paragraph without its bold markers, for anything that reads it
+        aloud or posts it as text rather than drawing it."""
+        return _BOLD_SPAN.sub(r"\1", self.paragraph).replace("**", "")
 
-    def highlight_paragraph(self) -> Iterator[Tuple[str, bool]]:
-        """Walks the paragraph word by word, flagging the ones being taught so
-        a renderer can colour them without re-deriving the rule."""
-        keys = self.vocab_keys
-        for token in self.paragraph.split():
-            yield token, _WORD_CHARS.sub("", token).lower() in keys
+    def highlight_paragraph(self) -> Iterator[Fragment]:
+        """Splits the paragraph into fragments, carrying through which ones the
+        draft marked with `**`.
+
+        The markup is the author's decision and this only reads it: a word the
+        draft bolded once is taught once even where it appears again later, and
+        a word that is in the vocab list but was left unmarked stays plain.
+        """
+        starts_word = True
+        for chunk, highlighted in _bold_runs(self.paragraph):
+            if chunk[:1].isspace():
+                starts_word = True
+            for index, piece in enumerate(chunk.split()):
+                yield Fragment(piece, highlighted, starts_word or index > 0)
+                starts_word = False
+            if chunk[-1:].isspace():
+                starts_word = True
+
+
+def _bold_runs(text: str) -> Iterator[Tuple[str, bool]]:
+    """The text as alternating plain and bolded stretches, markers removed."""
+    cursor = 0
+    for match in _BOLD_SPAN.finditer(text):
+        if match.start() > cursor:
+            yield text[cursor:match.start()], False
+        yield match.group(1), True
+        cursor = match.end()
+    if cursor < len(text):
+        yield text[cursor:], False
 
 
 def to_entries(rows: List[dict]) -> Tuple[VocabEntry, ...]:

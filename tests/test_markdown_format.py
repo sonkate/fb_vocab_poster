@@ -30,8 +30,14 @@ def test_parses_frontmatter_sections_and_vocab_rows():
     assert lesson.vocab[0].meaning == "a person who makes coffee"
 
 
-def test_bold_markers_are_stripped_so_they_are_not_spoken_or_drawn():
+def test_bold_markers_survive_parsing_because_they_say_what_is_taught():
     assert markdown_format.parse(DRAFT).paragraph == (
+        "The **barista** asked about the **roast** I wanted."
+    )
+
+
+def test_the_spoken_and_posted_paragraph_has_no_markers_in_it():
+    assert markdown_format.parse(DRAFT).plain_paragraph == (
         "The barista asked about the roast I wanted."
     )
 

@@ -4,7 +4,7 @@ The markdown file is the review surface of this whole system, so its shape is
 pinned down in exactly one place: here.
 """
 import re
-from typing import Dict, List
+from typing import Dict, List, Sequence
 
 from ...domain import (
     CEFRLevel,
@@ -17,6 +17,8 @@ from ...domain import (
 
 FRONTMATTER = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 FIELD_SEPARATOR = "—"
+
+AVOID_NOTE = "Đã dạy ở bài trước, đừng dùng lại"
 
 PARAGRAPH = "Paragraph"
 CAPTION = "Caption"
@@ -75,15 +77,22 @@ def parse(text: str, source: str = "<draft>") -> Lesson:
         level=level,
         format=lesson_format,
         vocab=tuple(_parse_vocab(_section(body, spec.section))),
-        # Bold markers help a human reader but would be read aloud and drawn
-        # literally, so they come off here.
-        paragraph=_section(body, PARAGRAPH).replace("**", ""),
+        # The bold markers stay: they are how the draft says which words the
+        # slide teaches, and only the code that speaks or posts the paragraph
+        # takes them off.
+        paragraph=_section(body, PARAGRAPH),
         caption=_section(body, CAPTION),
     )
 
 
-def render(lesson: Lesson) -> str:
-    """Serialises a lesson back into the same format `parse` accepts."""
+def render(lesson: Lesson, avoid: Sequence[str] = ()) -> str:
+    """Serialises a lesson back into the same format `parse` accepts.
+
+    `avoid` is written in as a comment rather than as content: most drafts are
+    still filled in by hand, and whoever fills this one in needs the
+    already-taught list in front of them. `_parse_vocab` drops comment lines,
+    so the note never survives back into a `Lesson`.
+    """
     spec = lesson.spec
     lines = [
         "---",
@@ -97,6 +106,8 @@ def render(lesson: Lesson) -> str:
         # rather than leaving a reviewer to infer it from the rows.
         f"<!-- {f' {FIELD_SEPARATOR} '.join(spec.columns)} -->",
     ]
+    if avoid:
+        lines.append(f"<!-- {AVOID_NOTE}: {', '.join(avoid)} -->")
     for entry in lesson.vocab:
         lines.append(
             f"- {entry.word} {FIELD_SEPARATOR} {entry.ipa} {FIELD_SEPARATOR} {entry.meaning}"

@@ -65,7 +65,7 @@ def build_audio_plan(lesson: Lesson) -> List[SpeechCue]:
             plan.append(SpeechCue(kind=WORD, text=text, slow=True, vocab_index=index))
         plan.append(SpeechCue(kind=WORD, text=text, slow=False, vocab_index=index))
     if spec.needs_paragraph:
-        plan.append(SpeechCue(kind=PARAGRAPH, text=lesson.paragraph.strip(), slow=False))
+        plan.append(SpeechCue(kind=PARAGRAPH, text=lesson.plain_paragraph.strip(), slow=False))
     return plan
 
 

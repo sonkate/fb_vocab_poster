@@ -18,20 +18,46 @@ def test_unknown_level_is_rejected_with_the_valid_options():
         CEFRLevel.parse("Z9")
 
 
-def test_taught_words_are_flagged_inside_the_paragraph_despite_punctuation():
+def _fragments(paragraph: str, *words: str):
     lesson = Lesson(
         topic="School",
         level=CEFRLevel.B1,
-        vocab=(VocabEntry(word="Homework"),),
-        paragraph="I finished homework, then rested.",
+        vocab=tuple(VocabEntry(word=word) for word in words),
+        paragraph=paragraph,
     )
+    return [(f.text, f.highlighted, f.starts_word) for f in lesson.highlight_paragraph()]
 
-    assert list(lesson.highlight_paragraph()) == [
-        ("I", False),
-        ("finished", False),
-        ("homework,", True),
-        ("then", False),
-        ("rested.", False),
+
+def test_a_repeated_word_is_taught_only_where_the_draft_marked_it():
+    assert _fragments("I did **homework**, then more homework.", "homework") == [
+        ("I", False, True),
+        ("did", False, True),
+        ("homework", True, True),
+        (",", False, False),
+        ("then", False, True),
+        ("more", False, True),
+        ("homework.", False, True),
+    ]
+
+
+def test_punctuation_stays_outside_the_taught_word():
+    # The full stop is its own fragment and does not begin a word, so it is
+    # drawn in body colour hard up against `brother` with no gap.
+    assert _fragments("I have one **brother**.", "brother") == [
+        ("I", False, True),
+        ("have", False, True),
+        ("one", False, True),
+        ("brother", True, True),
+        (".", False, False),
+    ]
+
+
+def test_a_vocab_word_the_draft_left_unmarked_is_not_highlighted():
+    assert _fragments("My sister is ten.", "sister") == [
+        ("My", False, True),
+        ("sister", False, True),
+        ("is", False, True),
+        ("ten.", False, True),
     ]
 
 

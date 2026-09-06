@@ -1,7 +1,7 @@
 """Text measurement and wrapping helpers, shared by every slide layout."""
-from typing import Iterable, List, Sequence, Tuple
+from typing import Iterable, List, Sequence
 
-Token = Tuple[str, bool]
+from ...domain.lesson import Fragment
 
 
 def wrap_plain(draw, text: str, font, max_width: int) -> List[str]:
@@ -20,23 +20,25 @@ def wrap_plain(draw, text: str, font, max_width: int) -> List[str]:
     return lines or [""]
 
 
-def wrap_tokens(draw, tokens: Iterable[Token], font, max_width: int) -> List[List[Token]]:
-    """Same wrap, but over `(word, is_highlighted)` pairs so the taught words
-    keep their flag through to drawing."""
+def wrap_tokens(
+    draw, fragments: Iterable[Fragment], font, max_width: int
+) -> List[List[Fragment]]:
+    """Same wrap, but over `Fragment`s so the taught words keep their flag
+    through to drawing. A line only ever breaks where a word begins, which is
+    what keeps a trailing full stop with the word it belongs to."""
     space = draw.textlength(" ", font=font)
-    lines: List[List[Token]] = []
-    current: List[Token] = []
+    lines: List[List[Fragment]] = []
+    current: List[Fragment] = []
     current_width = 0.0
 
-    for word, highlighted in tokens:
-        word_width = draw.textlength(word, font=font)
-        advance = word_width if not current else word_width + space
-        if current and current_width + advance > max_width:
+    for fragment in fragments:
+        width = draw.textlength(fragment.text, font=font)
+        gap = space if current and fragment.starts_word else 0.0
+        if current and fragment.starts_word and current_width + gap + width > max_width:
             lines.append(current)
-            current, current_width = [], 0.0
-            advance = word_width
-        current.append((word, highlighted))
-        current_width += advance
+            current, current_width, gap = [], 0.0, 0.0
+        current.append(fragment)
+        current_width += gap + width
 
     if current:
         lines.append(current)
@@ -51,13 +53,20 @@ def paginate(lines: Sequence, per_page: int) -> List[List]:
 
 
 def draw_token_line(
-    draw, tokens: Sequence[Token], x: int, y: float, font, highlight_font, color, highlight_color
+    draw, fragments: Sequence[Fragment], x: int, y: float, font, highlight_font, color, highlight_color
 ) -> None:
     space = draw.textlength(" ", font=font)
-    for word, highlighted in tokens:
-        f = highlight_font if highlighted else font
-        draw.text((x, y), word, font=f, fill=highlight_color if highlighted else color)
-        x += draw.textlength(word, font=f) + space
+    for index, fragment in enumerate(fragments):
+        f = highlight_font if fragment.highlighted else font
+        if index and fragment.starts_word:
+            x += space
+        draw.text(
+            (x, y),
+            fragment.text,
+            font=f,
+            fill=highlight_color if fragment.highlighted else color,
+        )
+        x += draw.textlength(fragment.text, font=f)
 
 
 def leading(size: int) -> int:

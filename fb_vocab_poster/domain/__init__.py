@@ -9,7 +9,7 @@ from .errors import (
     InvalidLessonFile,
     InvalidLevelError,
 )
-from .lesson import Lesson, VocabEntry, to_entries
+from .lesson import Fragment, Lesson, VocabEntry, to_entries
 from .lesson_format import (
     FORMATS,
     MISTAKE,
@@ -39,6 +39,7 @@ __all__ = [
     "DomainError",
     "FORMATS",
     "FormatSpec",
+    "Fragment",
     "IncompleteLessonError",
     "InvalidLessonFile",
     "InvalidLevelError",
