@@ -77,6 +77,8 @@ class DraftRepository(Protocol):
 
     def reference(self, identifier: str) -> DraftRef: ...
 
+    def identifiers(self) -> Sequence[str]: ...
+
 
 class VocabularyLedger(Protocol):
     """Remembers what a topic has already taught, so it is never taught twice.

@@ -15,9 +15,18 @@ from .ports import (
     VideoRenderer,
     Workspace,
 )
-from .use_cases import DraftLesson, PublishLesson, RenderLesson
+from .ports import VocabularyLedger
+from .use_cases import (
+    BackfillLedger,
+    BackfillReport,
+    DraftLesson,
+    PublishLesson,
+    RenderLesson,
+)
 
 __all__ = [
+    "BackfillLedger",
+    "BackfillReport",
     "Clock",
     "DraftLesson",
     "DraftRef",
@@ -33,5 +42,6 @@ __all__ = [
     "RenderedLesson",
     "SpeechSynthesizer",
     "VideoRenderer",
+    "VocabularyLedger",
     "Workspace",
 ]

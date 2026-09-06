@@ -6,7 +6,7 @@ exercised in a test with fakes and no wiring code has to be duplicated.
 from dataclasses import dataclass
 from functools import cached_property
 
-from .application import DraftLesson, PublishLesson, RenderLesson
+from .application import BackfillLedger, DraftLesson, PublishLesson, RenderLesson
 from .application.ports import LessonDrafter, VocabularyLedger
 from .infrastructure.audio import (
     GttsSpeechSynthesizer,
@@ -150,6 +150,12 @@ class Container:
             repository=self.repository,
             clock=self.clock,
             ledger=self.ledger,
+        )
+
+    @cached_property
+    def backfill_ledger(self) -> BackfillLedger:
+        return BackfillLedger(
+            repository=self.repository, ledger=self.ledger, reporter=self.reporter
         )
 
     @cached_property

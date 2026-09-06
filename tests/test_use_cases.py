@@ -4,7 +4,12 @@ from datetime import datetime
 
 import pytest
 
-from fb_vocab_poster.application import DraftLesson, PublishLesson, RenderLesson
+from fb_vocab_poster.application import (
+    BackfillLedger,
+    DraftLesson,
+    PublishLesson,
+    RenderLesson,
+)
 from fb_vocab_poster.application.ports import (
     DraftRef,
     Narration,
@@ -44,6 +49,9 @@ class FakeRepository:
 
     def reference(self, identifier):
         return DraftRef(identifier=identifier, basename="travel_B1")
+
+    def identifiers(self):
+        return ["drafts/travel_B1.md"]
 
 
 class FakeDrafter:
@@ -209,3 +217,80 @@ def test_a_blank_template_is_not_recorded_as_though_it_taught_anything():
     make_draft(drafter=FakeDrafter(lesson=blank), ledger=ledger)("Family", "a1")
 
     assert ledger.recorded == []
+
+
+BLANK = Lesson(
+    topic="Family",
+    level=CEFRLevel.A1,
+    vocab=(VocabEntry("word", "ipa", "meaning"),),
+    paragraph="Paste your paragraph here.",
+)
+
+
+class FolderRepository:
+    """A repository holding several drafts, one of which cannot be read."""
+
+    def __init__(self, lessons):
+        self.lessons = dict(lessons)
+
+    def identifiers(self):
+        return sorted(self.lessons)
+
+    def reference(self, identifier):
+        return DraftRef(identifier=identifier, basename=identifier)
+
+    def load(self, identifier):
+        lesson = self.lessons[identifier]
+        if lesson is None:
+            raise OSError("unreadable draft")
+        return lesson
+
+    def save(self, lesson, created_at, avoid=()):
+        raise AssertionError("backfill must never write a draft")
+
+
+def make_backfill(lessons, ledger):
+    return BackfillLedger(
+        repository=FolderRepository(lessons),
+        ledger=ledger,
+        reporter=SilentReporter(),
+    )
+
+
+def test_backfill_records_every_readable_draft():
+    ledger = FakeLedger()
+
+    report = make_backfill({"family_A1": LESSON, "travel_B1": LESSON}, ledger)()
+
+    assert report.recorded == ("family_A1", "travel_B1")
+    assert [ref.basename for _, ref in ledger.recorded] == ["family_A1", "travel_B1"]
+
+
+def test_backfill_skips_a_blank_template_rather_than_teaching_its_placeholders():
+    ledger = FakeLedger()
+
+    report = make_backfill({"blank_A1": BLANK, "travel_B1": LESSON}, ledger)()
+
+    assert report.recorded == ("travel_B1",)
+    assert report.skipped == (("blank_A1", "still a blank template"),)
+
+
+def test_one_unreadable_draft_does_not_abandon_the_others():
+    ledger = FakeLedger()
+
+    report = make_backfill({"broken": None, "travel_B1": LESSON}, ledger)()
+
+    assert report.recorded == ("travel_B1",)
+    assert report.skipped[0][0] == "broken"
+    assert report.total == 2
+
+
+def test_backfilling_twice_records_the_same_drafts_again_not_new_ones():
+    ledger = FakeLedger()
+    backfill = make_backfill({"family_A1": LESSON}, ledger)
+
+    first, second = backfill(), backfill()
+
+    assert first.recorded == second.recorded == ("family_A1",)
+    # Same reference both times, so a keyed store overwrites instead of adding.
+    assert {ref.basename for _, ref in ledger.recorded} == {"family_A1"}

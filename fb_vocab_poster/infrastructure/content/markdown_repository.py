@@ -4,6 +4,7 @@ Implements `application.ports.DraftRepository`. The identifier a caller passes
 around is simply the file path, which keeps the CLI's copy-paste workflow
 (`python main.py build drafts/travel_B1_....md`) working unchanged.
 """
+import glob
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -36,6 +37,11 @@ class MarkdownDraftRepository:
         except OSError as exc:
             raise InvalidLessonFile(f"Could not read draft {identifier}: {exc}") from exc
         return markdown_format.parse(text, source=identifier)
+
+    def identifiers(self) -> Sequence[str]:
+        """Every draft on disk, oldest name first — the basenames start with
+        the topic and end with a timestamp, so sorting is chronological."""
+        return sorted(glob.glob(os.path.join(self.drafts_dir, "*.md")))
 
     def reference(self, identifier: str) -> DraftRef:
         basename = os.path.splitext(os.path.basename(identifier))[0]

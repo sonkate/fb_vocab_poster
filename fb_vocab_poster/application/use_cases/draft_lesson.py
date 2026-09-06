@@ -2,21 +2,9 @@
 from dataclasses import dataclass
 from typing import List
 
-from ...domain import CEFRLevel, Lesson, LessonFormat, spec_for
+from ...domain import CEFRLevel, LessonFormat
+from ..blank_form import is_blank_form
 from ..ports import Clock, DraftRef, DraftRepository, LessonDrafter, VocabularyLedger
-
-
-def _is_blank_form(lesson: Lesson) -> bool:
-    """True when every row is still the column legend the template lays down.
-
-    A blank form has taught nobody anything, so recording its rows would put
-    the literal words "word", "ipa" and "meaning" into the ledger and exclude
-    them from every future lesson.
-    """
-    columns = spec_for(lesson.format).columns
-    return bool(lesson.vocab) and all(
-        entry.columns == columns for entry in lesson.vocab
-    )
 
 
 @dataclass(frozen=True)
@@ -35,6 +23,6 @@ class DraftLesson:
         )
         ref = self.repository.save(lesson, self.clock.now(), avoid=avoid)
 
-        if not _is_blank_form(lesson):
+        if not is_blank_form(lesson):
             self.ledger.record(lesson, ref)
         return ref
