@@ -7,6 +7,7 @@ around is simply the file path, which keeps the CLI's copy-paste workflow
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Sequence
 
 from ...application.ports import DraftRef
 from ...domain import InvalidLessonFile, Lesson
@@ -18,12 +19,14 @@ from . import markdown_format
 class MarkdownDraftRepository:
     drafts_dir: str
 
-    def save(self, lesson: Lesson, created_at: datetime) -> DraftRef:
+    def save(
+        self, lesson: Lesson, created_at: datetime, avoid: Sequence[str] = ()
+    ) -> DraftRef:
         os.makedirs(self.drafts_dir, exist_ok=True)
         basename = draft_basename(lesson.topic, lesson.level, created_at)
         path = os.path.join(self.drafts_dir, f"{basename}.md")
         with open(path, "w", encoding="utf-8") as handle:
-            handle.write(markdown_format.render(lesson))
+            handle.write(markdown_format.render(lesson, avoid=avoid))
         return DraftRef(identifier=path, basename=basename)
 
     def load(self, identifier: str) -> Lesson:

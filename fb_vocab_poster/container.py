@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from functools import cached_property
 
 from .application import DraftLesson, PublishLesson, RenderLesson
-from .application.ports import LessonDrafter
+from .application.ports import LessonDrafter, VocabularyLedger
 from .infrastructure.audio import (
     GttsSpeechSynthesizer,
     MoviePyNarrationComposer,
@@ -20,6 +20,7 @@ from .infrastructure.content import (
     MarkdownDraftRepository,
     TemplateDrafter,
 )
+from .infrastructure.ledger import DraftFolderLedger
 from .infrastructure.publishing import FacebookPagePublisher
 from .infrastructure.video import (
     FEED_HEIGHT,
@@ -77,6 +78,12 @@ class Container:
         return TemplateDrafter()
 
     @cached_property
+    def ledger(self) -> VocabularyLedger:
+        """Every draft ever written is a record of what that topic has taught,
+        so the folder alone is enough to stop a word being taught twice."""
+        return DraftFolderLedger(drafts_dir=self.settings.drafts_dir)
+
+    @cached_property
     def narrator(self) -> MoviePyNarrationComposer:
         """Currently narrating with TiengDong (unofficial — see
         `infrastructure/audio/tiengdong_synthesizer.py` for the cookie
@@ -120,7 +127,10 @@ class Container:
     @cached_property
     def draft_lesson(self) -> DraftLesson:
         return DraftLesson(
-            drafter=self.drafter, repository=self.repository, clock=self.clock
+            drafter=self.drafter,
+            repository=self.repository,
+            clock=self.clock,
+            ledger=self.ledger,
         )
 
     @cached_property

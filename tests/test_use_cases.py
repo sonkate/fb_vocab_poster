@@ -32,9 +32,11 @@ class FakeRepository:
     def __init__(self, lesson=LESSON):
         self.lesson = lesson
         self.saved = []
+        self.avoided = []
 
-    def save(self, lesson, created_at):
+    def save(self, lesson, created_at, avoid=()):
         self.saved.append((lesson, created_at))
+        self.avoided.append(tuple(avoid))
         return DraftRef(identifier="drafts/travel_B1.md", basename="travel_B1")
 
     def load(self, identifier):
@@ -45,12 +47,27 @@ class FakeRepository:
 
 
 class FakeDrafter:
-    def __init__(self):
+    def __init__(self, lesson=LESSON):
+        self.lesson = lesson
         self.calls = []
+        self.avoided = []
 
-    def draft(self, topic, level, lesson_format):
+    def draft(self, topic, level, lesson_format, avoid=()):
         self.calls.append((topic, level, lesson_format))
-        return LESSON
+        self.avoided.append(tuple(avoid))
+        return self.lesson
+
+
+class FakeLedger:
+    def __init__(self, taught=()):
+        self._taught = set(taught)
+        self.recorded = []
+
+    def taught(self, topic, level):
+        return set(self._taught)
+
+    def record(self, lesson, ref):
+        self.recorded.append((lesson, ref))
 
 
 class FakeNarrator:
@@ -88,6 +105,15 @@ class SilentReporter:
         self.messages.append(message)
 
 
+def make_draft(drafter=None, repository=None, ledger=None):
+    return DraftLesson(
+        drafter=drafter or FakeDrafter(),
+        repository=repository or FakeRepository(),
+        clock=FakeClock(),
+        ledger=ledger or FakeLedger(),
+    )
+
+
 def make_render(repository=None):
     return RenderLesson(
         repository=repository or FakeRepository(),
@@ -100,9 +126,7 @@ def make_render(repository=None):
 def test_drafting_parses_the_level_before_asking_the_drafter():
     drafter, repository = FakeDrafter(), FakeRepository()
 
-    ref = DraftLesson(drafter=drafter, repository=repository, clock=FakeClock())(
-        "Travel", "b1"
-    )
+    ref = make_draft(drafter=drafter, repository=repository)("Travel", "b1")
 
     assert drafter.calls == [("Travel", CEFRLevel.B1, LessonFormat.VOCAB)]
     assert repository.saved[0][1] == datetime(2026, 1, 1, 12, 0, 0)
@@ -112,9 +136,7 @@ def test_drafting_parses_the_level_before_asking_the_drafter():
 def test_the_requested_format_reaches_the_drafter():
     drafter = FakeDrafter()
 
-    DraftLesson(drafter=drafter, repository=FakeRepository(), clock=FakeClock())(
-        "Travel", "b1", "mistake"
-    )
+    make_draft(drafter=drafter)("Travel", "b1", "mistake")
 
     assert drafter.calls[0][2] is LessonFormat.MISTAKE
 
@@ -144,3 +166,46 @@ def test_publishing_sends_the_rendered_video_with_the_lesson_caption():
     assert publisher.posted == [("output/travel_B1.mp4", "Level: B1 #travel")]
     assert receipt.post_id == "99"
     assert rendered.video_path == "output/travel_B1.mp4"
+
+
+def test_words_already_taught_are_handed_to_the_drafter_to_avoid():
+    drafter = FakeDrafter()
+    ledger = FakeLedger(taught={"mother", "father", "sister"})
+
+    make_draft(drafter=drafter, ledger=ledger)("Family", "a1")
+
+    assert drafter.avoided == [("father", "mother", "sister")]
+
+
+def test_the_avoid_list_also_reaches_the_draft_file():
+    repository = FakeRepository()
+    ledger = FakeLedger(taught={"mother", "father"})
+
+    make_draft(repository=repository, ledger=ledger)("Family", "a1")
+
+    assert repository.avoided == [("father", "mother")]
+
+
+def test_a_finished_draft_is_recorded_so_the_next_lesson_skips_its_words():
+    ledger = FakeLedger()
+
+    ref = make_draft(ledger=ledger)("Travel", "b1")
+
+    assert [(lesson, r.basename) for lesson, r in ledger.recorded] == [
+        (LESSON, "travel_B1")
+    ]
+    assert ref.basename == "travel_B1"
+
+
+def test_a_blank_template_is_not_recorded_as_though_it_taught_anything():
+    blank = Lesson(
+        topic="Family",
+        level=CEFRLevel.A1,
+        vocab=(VocabEntry("word", "ipa", "meaning"),),
+        paragraph="Paste your paragraph here.",
+    )
+    ledger = FakeLedger()
+
+    make_draft(drafter=FakeDrafter(lesson=blank), ledger=ledger)("Family", "a1")
+
+    assert ledger.recorded == []

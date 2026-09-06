@@ -7,7 +7,7 @@ of these shapes and wiring it in the container; no use case changes.
 """
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Protocol, Sequence
+from typing import Optional, Protocol, Sequence, Set
 
 from ..domain import (
     CEFRLevel,
@@ -58,18 +58,36 @@ class LessonDrafter(Protocol):
     """Produces lesson content for a topic, level and format."""
 
     def draft(
-        self, topic: str, level: CEFRLevel, lesson_format: LessonFormat
+        self,
+        topic: str,
+        level: CEFRLevel,
+        lesson_format: LessonFormat,
+        avoid: Sequence[str] = (),
     ) -> Lesson: ...
 
 
 class DraftRepository(Protocol):
     """Persists reviewable drafts and reads the edited versions back."""
 
-    def save(self, lesson: Lesson, created_at: datetime) -> DraftRef: ...
+    def save(
+        self, lesson: Lesson, created_at: datetime, avoid: Sequence[str] = ()
+    ) -> DraftRef: ...
 
     def load(self, identifier: str) -> Lesson: ...
 
     def reference(self, identifier: str) -> DraftRef: ...
+
+
+class VocabularyLedger(Protocol):
+    """Remembers what a topic has already taught, so it is never taught twice.
+
+    Five words do not exhaust a topic — Family at A1 has twenty more — so a
+    second lesson on the same topic must know which words the first one used.
+    """
+
+    def taught(self, topic: str, level: CEFRLevel) -> Set[str]: ...
+
+    def record(self, lesson: Lesson, ref: DraftRef) -> None: ...
 
 
 class SpeechSynthesizer(Protocol):
@@ -131,5 +149,6 @@ __all__ = [
     "RenderedLesson",
     "SpeechSynthesizer",
     "VideoRenderer",
+    "VocabularyLedger",
     "Workspace",
 ]

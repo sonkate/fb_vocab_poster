@@ -5,7 +5,7 @@ markdown the repository stores, so its reply goes through the one parser the
 rest of the system uses — a malformed reply fails here, not three steps later.
 """
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, Optional, Sequence
 
 import anthropic
 
@@ -15,7 +15,7 @@ from . import markdown_format
 DRAFT_PROMPT = """You are writing content for a Facebook page that teaches \
 English to Vietnamese learners. Topic: "{topic}". CEFR level: {level}.
 
-Produce EXACTLY this markdown structure, nothing before or after it:
+{avoid_block}Produce EXACTLY this markdown structure, nothing before or after it:
 
 ## {section}
 {rows}
@@ -26,6 +26,14 @@ hashtags, ending in a real question a reader can answer in five seconds. \
 Mention the level, e.g. "Level: {level}". Never write "tag a friend", \
 "comment YES" or "share if you agree" — Facebook penalises engagement bait \
 at the post level.)
+"""
+
+AVOID_BLOCK = """This topic has been taught before. These have already been \
+used and must NOT appear again — not one of them, in any form:
+{avoid}
+
+Choose entirely different ones that are still natural for this topic and level.
+
 """
 
 PARAGRAPH_BLOCK = """## Paragraph
@@ -76,11 +84,17 @@ class AnthropicDrafter:
         topic: str,
         level: CEFRLevel,
         lesson_format: LessonFormat = LessonFormat.VOCAB,
+        avoid: Sequence[str] = (),
     ) -> Lesson:
         spec = spec_for(lesson_format)
         prompt = DRAFT_PROMPT.format(
             topic=topic,
             level=level,
+            avoid_block=(
+                AVOID_BLOCK.format(avoid="\n".join(f"- {word}" for word in avoid))
+                if avoid
+                else ""
+            ),
             section=spec.section,
             rows=ROW_INSTRUCTIONS[lesson_format].format(level=level),
             paragraph_block=(
