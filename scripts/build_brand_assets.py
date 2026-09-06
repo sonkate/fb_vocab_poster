@@ -129,11 +129,11 @@ def build_cover(theme: Theme) -> str:
     )
 
     # Steps climbing off the right edge: decoration the mobile crop may eat
-    # without losing a word.
+    # without losing a word. Three bars, matching the mark's three treads.
     base = 486 * s
     bar_w, gap = 42 * s, 16 * s
     right = (width - 96) * s
-    heights = (80, 130, 190, 260)
+    heights = (90, 175, 260)
     left = right - (len(heights) * bar_w + (len(heights) - 1) * gap)
     for index, bar_height in enumerate(heights):
         bar_x = left + index * (bar_w + gap)
