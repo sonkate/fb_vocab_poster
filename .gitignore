@@ -46,3 +46,11 @@ drafts/*.md
 .idea/
 .DS_Store
 *.swp
+
+# Gitnexus
+.gitnexus/
+
+# Assets — only the brand images, which `scripts/build_brand_assets.py`
+# regenerates; assets/fonts/ stays tracked so a font added later isn't
+# silently swallowed the way a bare `assets/*` would swallow it.
+assets/brand/
