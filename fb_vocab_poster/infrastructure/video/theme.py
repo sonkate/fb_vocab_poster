@@ -68,6 +68,13 @@ class Theme:
     muted: RGB = (106, 137, 167)       # #6A89A7 — rules and secondary detail
     danger: RGB = (255, 122, 107)      # #FF7A6B — the wrong half of a contrast slide
 
+    # One colour per CEFR band, worn by the level chip. The chip is a filled
+    # light shape, so its type is dark — brand text on mint is unreadable.
+    level_a: RGB = (95, 211, 160)      # #5FD3A0 — mint
+    level_b: RGB = (99, 179, 237)      # #63B3ED — sky
+    level_c: RGB = (180, 139, 255)     # #B48BFF — violet
+    level_text: RGB = (18, 32, 43)     # #12202B — type sitting on a level colour
+
     body_size: int = 40
     line_height: int = 56
     entry_gap: int = 16
@@ -131,6 +138,14 @@ class Theme:
     def ipa_font(self, size: int):
         """The phonetic face. Never route non-IPA text through this."""
         return _first_available(self.ipa_fonts, size)
+
+    def level_color(self, level) -> RGB:
+        """Chip colour for a CEFR level, keyed by its band so A1 and A2 read
+        as the same tier at a glance. Takes a `CEFRLevel` or its code."""
+        band = str(level).strip().upper()[:1]
+        return {"A": self.level_a, "B": self.level_b, "C": self.level_c}.get(
+            band, self.muted
+        )
 
 
 def _first_available(candidates: Sequence[str], size: int):
