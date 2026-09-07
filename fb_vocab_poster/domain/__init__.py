@@ -10,7 +10,7 @@ from .errors import (
     InvalidLevelError,
     StaleRenderError,
 )
-from .lesson import Fragment, Lesson, VocabEntry, to_entries
+from .lesson import Fragment, Lesson, VocabEntry, fragments_of, strip_markup, to_entries
 from .lesson_format import (
     FORMATS,
     MISTAKE,
@@ -41,6 +41,7 @@ __all__ = [
     "FORMATS",
     "FormatSpec",
     "Fragment",
+    "fragments_of",
     "IncompleteLessonError",
     "InvalidLessonFile",
     "InvalidLevelError",
@@ -56,6 +57,7 @@ __all__ = [
     "spec_for",
     "SpeechCue",
     "StaleRenderError",
+    "strip_markup",
     "to_entries",
     "total_duration",
     "UPGRADE",

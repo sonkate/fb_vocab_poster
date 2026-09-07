@@ -61,6 +61,12 @@ class FormatSpec:
     needs_paragraph: bool
     series_label: str = ""           # the show's name, worn at the foot of every slide
 
+    # The "spot the mistake" rhythm: read the wrong sentence, buzz, read the
+    # right one, ding, then hold for the explanation — spread across two
+    # slides per row instead of one. Only `mistake` asks for it; `spoken_column`
+    # and `repeat_slowly` are unused for a format that sets this.
+    contrast_rhythm: bool = False
+
     def series_caption(self, topic: str = "") -> str:
         """What the foot of a slide reads: the series, plus the topic of this
         particular episode when there is one."""
@@ -88,6 +94,7 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         repeat_slowly=False,
         needs_paragraph=False,
         series_label="Sai chỗ nào",
+        contrast_rhythm=True,
     ),
     LessonFormat.UPGRADE: FormatSpec(
         section="Upgrades",

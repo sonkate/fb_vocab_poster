@@ -20,6 +20,7 @@ from ...domain import (
     Lesson,
     SlideRequest,
     VocabEntry,
+    fragments_of,
     page_word_counts,
 )
 from . import text as text_utils
@@ -47,8 +48,14 @@ class PreparedSlides:
             image = self._outro()
         elif request.kind == WORD:
             image = self._word(request.vocab)
-        elif request.kind in (MISTAKE, UPGRADE):
+        elif request.kind == UPGRADE:
             image = self._contrast(request.vocab)
+        elif request.kind == MISTAKE:
+            image = (
+                self._contrast_wrong(request.vocab)
+                if request.stage == "wrong"
+                else self._contrast_reveal(request.vocab)
+            )
         elif request.kind == PARAGRAPH:
             image = self._paragraph(self.paragraph_pages[request.page])
         else:
@@ -277,10 +284,11 @@ class PreparedSlides:
         return image
 
     def _contrast(self, entry: VocabEntry) -> Image.Image:
-        """Before above, after below: the shared layout of every format that
-        teaches by opposition — a mistake and its correction, a weak phrase and
-        its upgrade. Which of the two the viewer is looking at is named by the
-        series label at the foot, drawn by `_frame`."""
+        """Before above, after below: `upgrade`'s layout — a weak phrase and
+        its stronger replacement, on one slide. `mistake` used to share this
+        too, but now runs its own two-slide rhythm below (`_contrast_wrong`,
+        `_contrast_reveal`); this one is untouched so upgrade's slide can't
+        drift with it."""
         theme = self.theme
         image, draw = self._canvas()
         content_top, content_bottom = self._frame(draw)
@@ -319,6 +327,144 @@ class PreparedSlides:
         y = text_utils.draw_centered(
             draw, after_lines, to_font, y, theme.accent, theme.width
         )
+
+        if note_lines:
+            y += theme.rule_meaning_gap
+            text_utils.draw_centered(
+                draw, note_lines, note_font, y, theme.muted, theme.width
+            )
+        return image
+
+    def _badge(self, draw, label: str, top: float, background) -> float:
+        """A small centred pill, the level chip's shape but mid-canvas —
+        the "SAI" tag that lands with the buzzer."""
+        theme = self.theme
+        font = theme.font(theme.badge_size, bold=True)
+        width = draw.textlength(label, font=font) + theme.badge_padding_x * 2
+        height = text_utils.line_height(font) + theme.badge_padding_y * 2
+        x = (theme.width - width) / 2
+        draw.rounded_rectangle(
+            [(x, top), (x + width, top + height)],
+            radius=theme.badge_radius,
+            fill=background,
+        )
+        draw.text(
+            (x + theme.badge_padding_x, top + theme.badge_padding_y),
+            label,
+            font=font,
+            fill=theme.level_text,
+        )
+        return top + height
+
+    def _contrast_wrong(self, entry: VocabEntry) -> Image.Image:
+        """Slide A of a mistake row: only the wrong sentence, tagged SAI,
+        while the buzzer plays. The fix waits for `_contrast_reveal` — showing
+        both at once would hand out the answer before "spot the mistake" has
+        had its moment, which is the whole point of reading the wrong
+        sentence aloud in the first place."""
+        theme = self.theme
+        image, draw = self._canvas()
+        content_top, content_bottom = self._frame(draw)
+
+        before, _after, _note = entry.columns
+        font = theme.font(theme.contrast_to_size)
+        marked = "**" in before
+
+        if marked:
+            lines = text_utils.wrap_tokens(draw, fragments_of(before), font, theme.max_width)
+            block_height = len(lines) * text_utils.line_height(font)
+        else:
+            lines = text_utils.wrap_plain(draw, before, font, theme.max_width)
+            block_height = text_utils.block_height(lines, font)
+
+        badge_font = theme.font(theme.badge_size, bold=True)
+        badge_height = text_utils.line_height(badge_font) + theme.badge_padding_y * 2
+
+        total = badge_height + theme.badge_gap + block_height
+        y = content_top + (content_bottom - content_top - total) / 2
+        y = self._badge(draw, "SAI", y, theme.danger)
+        y += theme.badge_gap
+
+        if marked:
+            text_utils.draw_centered_tokens(
+                draw, lines, font, y, theme.text, theme.width,
+                highlight_color=theme.danger, underline=True,
+            )
+        else:
+            text_utils.draw_centered(draw, lines, font, y, theme.danger, theme.width)
+        return image
+
+    def _contrast_reveal(self, entry: VocabEntry) -> Image.Image:
+        """Slide B of a mistake row: the wrong sentence recapped small, the
+        fix revealed big, while the ding plays and the explanation holds on
+        screen. A row that marks its wrong/right span with `**` (the same
+        convention the paragraph uses) gets that span underlined in red on
+        the wrong line and picked out in gold on the right one; a row with no
+        markup falls back to colouring the whole sentence, exactly as before."""
+        theme = self.theme
+        image, draw = self._canvas()
+        content_top, content_bottom = self._frame(draw)
+
+        before, after, note = entry.columns
+        from_font = theme.font(theme.contrast_from_size)
+        arrow_font = theme.ipa_font(theme.contrast_from_size)
+        to_font = theme.font(theme.contrast_to_size, bold=True)
+        note_font = theme.font(theme.meaning_size)
+
+        before_marked = "**" in before
+        after_marked = "**" in after
+
+        if before_marked:
+            before_lines = text_utils.wrap_tokens(draw, fragments_of(before), from_font, theme.max_width)
+            before_height = len(before_lines) * text_utils.line_height(from_font)
+        else:
+            before_lines = text_utils.wrap_plain(draw, before, from_font, theme.max_width)
+            before_height = text_utils.block_height(before_lines, from_font)
+
+        if after_marked:
+            after_lines = text_utils.wrap_tokens(draw, fragments_of(after), to_font, theme.max_width)
+            after_height = len(after_lines) * text_utils.line_height(to_font)
+        else:
+            after_lines = text_utils.wrap_plain(draw, after, to_font, theme.max_width)
+            after_height = text_utils.block_height(after_lines, to_font)
+
+        note_lines = (
+            text_utils.wrap_plain(
+                draw, note, note_font, theme.max_width - theme.meaning_inset
+            )
+            if note
+            else []
+        )
+
+        total = before_height + text_utils.line_height(arrow_font) + after_height
+        if note_lines:
+            total += theme.rule_meaning_gap + text_utils.block_height(note_lines, note_font)
+
+        y = content_top + (content_bottom - content_top - total) / 2
+
+        if before_marked:
+            y = text_utils.draw_centered_tokens(
+                draw, before_lines, from_font, y, theme.text, theme.width,
+                highlight_color=theme.danger, underline=True,
+            )
+        else:
+            y = text_utils.draw_centered(
+                draw, before_lines, from_font, y, theme.danger, theme.width
+            )
+
+        y = text_utils.draw_centered(
+            draw, [ARROW], arrow_font, y, theme.muted, theme.width
+        )
+
+        if after_marked:
+            y = text_utils.draw_centered_tokens(
+                draw, after_lines, to_font, y, theme.text, theme.width,
+                highlight_color=theme.accent,
+            )
+        else:
+            y = text_utils.draw_centered(
+                draw, after_lines, to_font, y, theme.accent, theme.width
+            )
 
         if note_lines:
             y += theme.rule_meaning_gap

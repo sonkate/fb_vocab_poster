@@ -87,7 +87,7 @@ class Lesson:
     def plain_paragraph(self) -> str:
         """The paragraph without its bold markers, for anything that reads it
         aloud or posts it as text rather than drawing it."""
-        return _BOLD_SPAN.sub(r"\1", self.paragraph).replace("**", "")
+        return strip_markup(self.paragraph)
 
     def highlight_paragraph(self) -> Iterator[Fragment]:
         """Splits the paragraph into fragments, carrying through which ones the
@@ -97,15 +97,29 @@ class Lesson:
         draft bolded once is taught once even where it appears again later, and
         a word that is in the vocab list but was left unmarked stays plain.
         """
-        starts_word = True
-        for chunk, highlighted in _bold_runs(self.paragraph):
-            if chunk[:1].isspace():
-                starts_word = True
-            for index, piece in enumerate(chunk.split()):
-                yield Fragment(piece, highlighted, starts_word or index > 0)
-                starts_word = False
-            if chunk[-1:].isspace():
-                starts_word = True
+        return fragments_of(self.paragraph)
+
+
+def fragments_of(text: str) -> Iterator[Fragment]:
+    """Splits any `**`-marked text into fragments, carrying through which
+    words the author highlighted. Shared by the paragraph and by a `mistake`
+    row's wrong/right columns, so every format that highlights individual
+    words inside a longer text uses the same authoring convention."""
+    starts_word = True
+    for chunk, highlighted in _bold_runs(text):
+        if chunk[:1].isspace():
+            starts_word = True
+        for index, piece in enumerate(chunk.split()):
+            yield Fragment(piece, highlighted, starts_word or index > 0)
+            starts_word = False
+        if chunk[-1:].isspace():
+            starts_word = True
+
+
+def strip_markup(text: str) -> str:
+    """The plain reading of `**`-marked text, for anything that speaks or
+    posts it rather than drawing it."""
+    return _BOLD_SPAN.sub(r"\1", text).replace("**", "")
 
 
 def _bold_runs(text: str) -> Iterator[Tuple[str, bool]]:

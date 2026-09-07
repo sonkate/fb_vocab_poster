@@ -112,6 +112,59 @@ def draw_centered(draw, lines: Sequence[str], font, top: float, color, canvas_wi
     return y
 
 
+def _line_width(draw, line: Sequence[Fragment], font, highlight_font) -> float:
+    space = draw.textlength(" ", font=font)
+    width = 0.0
+    for index, fragment in enumerate(line):
+        f = highlight_font if fragment.highlighted else font
+        if index and fragment.starts_word:
+            width += space
+        width += draw.textlength(fragment.text, font=f)
+    return width
+
+
+def draw_centered_tokens(
+    draw,
+    lines: Sequence[Sequence[Fragment]],
+    font,
+    top: float,
+    color,
+    canvas_width: int,
+    highlight_font=None,
+    highlight_color=None,
+    underline: bool = False,
+) -> float:
+    """Centres wrapped fragment lines, setting a highlighted fragment apart
+    either by weight (pass `highlight_font`, the taught-word convention) or by
+    an underline in the same weight (`underline=True`). A mistake slide needs
+    the latter for its wrong span — bolding it would read as emphasis, the
+    same treatment the correct answer gets, when the point is the opposite."""
+    highlight_font = highlight_font or font
+    highlight_color = highlight_color if highlight_color is not None else color
+    space = draw.textlength(" ", font=font)
+    leading = line_height(font)
+    y = top
+    for line in lines:
+        x = (canvas_width - _line_width(draw, line, font, highlight_font)) / 2
+        for index, fragment in enumerate(line):
+            f = highlight_font if fragment.highlighted else font
+            if index and fragment.starts_word:
+                x += space
+            fill = highlight_color if fragment.highlighted else color
+            draw.text((x, y), fragment.text, font=f, fill=fill)
+            width = draw.textlength(fragment.text, font=f)
+            if fragment.highlighted and underline:
+                under_y = y + f.size + 4
+                draw.line(
+                    [(x, under_y), (x + width, under_y)],
+                    fill=highlight_color,
+                    width=max(2, f.size // 18),
+                )
+            x += width
+        y += leading
+    return y
+
+
 def draw_tracked(draw, text: str, font, y: float, color, canvas_width: int, tracking: int) -> None:
     """Centred small caps with letters held apart — the foot label is tiny, and
     tracking is what keeps it legible rather than a smudge."""

@@ -22,6 +22,7 @@ class SlideRequest:
     vocab: Optional[VocabEntry] = None
     page: int = 0
     page_count: int = 1
+    stage: str = "full"   # "wrong" or "full" — which half of a contrast-rhythm row this is
 
 
 def page_word_counts(pages: Sequence[Sequence[Sequence[Fragment]]]) -> List[int]:
@@ -64,7 +65,10 @@ def build_slide_plan(
             # a new format needs no branch here — only a painter.
             plan.append(
                 SlideRequest(
-                    kind=segment.kind, duration=segment.duration, vocab=segment.vocab
+                    kind=segment.kind,
+                    duration=segment.duration,
+                    vocab=segment.vocab,
+                    stage=segment.stage,
                 )
             )
 

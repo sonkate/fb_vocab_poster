@@ -24,6 +24,19 @@ def test_one_slide_per_narration_segment_when_paragraph_fits_one_page():
     assert [slide.duration for slide in plan] == [3.0, 12.0, 2.2]
 
 
+def test_a_non_paragraph_segments_stage_carries_through_to_its_slide():
+    """A contrast-rhythm row's two segments (wrong/full) each become their own
+    slide, and the painter needs to know which half it's drawing."""
+    timeline = (
+        NarrationSegment(kind="mistake", duration=2.0, stage="wrong"),
+        NarrationSegment(kind="mistake", duration=5.0, stage="full"),
+    )
+
+    plan = build_slide_plan(timeline)
+
+    assert [slide.stage for slide in plan] == ["wrong", "full"]
+
+
 def test_the_brand_card_closes_the_video_rather_than_opening_it():
     """The first seconds decide whether a viewer stays, so they go to content."""
     plan = build_slide_plan(TIMELINE, paragraph_page_weights=(1, 1))

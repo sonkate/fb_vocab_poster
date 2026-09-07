@@ -28,6 +28,7 @@ _SCALED_FIELDS: Sequence[str] = (
     "word_ipa_gap", "ipa_rule_gap", "rule_meaning_gap",
     "meaning_inset", "rule_half_width", "rule_thickness",
     "outro_mark_size", "outro_detail_size", "outro_cta_size", "outro_cta_gap",
+    "badge_size", "badge_padding_x", "badge_padding_y", "badge_radius", "badge_gap",
 )
 
 ASSETS_DIR = os.path.join(
@@ -154,6 +155,14 @@ class Theme:
     outro_cta_size: int = 46
     outro_cta_gap: int = 56
     outro_cta: str = "Theo dõi để tiến bộ mỗi ngày"
+
+    # The "SAI" tag on a mistake slide's wrong-only half — same pill shape as
+    # the level chip, but centred rather than pinned to a corner.
+    badge_size: int = 40
+    badge_padding_x: int = 26
+    badge_padding_y: int = 10
+    badge_radius: int = 18
+    badge_gap: int = 36
 
     # The wordmark is two-toned — the tail carries the accent colour, and that
     # single repeated detail is what makes the page recognisable in a feed.

@@ -8,24 +8,28 @@ defined here too, because the video layer reasons about it.
 from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
-from .lesson import Lesson, VocabEntry
+from .lesson import Lesson, VocabEntry, strip_markup
 from .lesson_format import OUTRO, PARAGRAPH, WORD
 
 
 @dataclass(frozen=True)
 class SpeechCue:
-    """A single thing to say: `text`, spoken slowly or at normal speed."""
+    """A single thing to say: `text`, spoken slowly or at normal speed, or —
+    for a contrast-rhythm row — tagged by which half it is."""
 
     kind: str
     text: str
     slow: bool = False
     vocab_index: Optional[int] = None
+    role: str = ""   # "" for a plain cue; "wrong"/"right" for a contrast row's two halves
 
     @property
     def clip_name(self) -> str:
         """Stable filename stem, so re-runs overwrite rather than pile up."""
         if self.kind == WORD:
             return f"word_{self.vocab_index}_{'slow' if self.slow else 'normal'}"
+        if self.role:
+            return f"{self.kind}_{self.vocab_index}_{self.role}"
         return self.kind
 
 
@@ -39,6 +43,14 @@ class NarrationTiming:
     pause_between_slow_fast: float = 0.5
     pause_after_word: float = 0.8
 
+    # The contrast rhythm (`mistake` only): wrong sentence, buzz, right
+    # sentence, ding, then a hold sized to the Vietnamese explanation so a
+    # viewer has time to actually read it before the next row starts.
+    buzzer_duration: float = 0.45
+    ding_duration: float = 0.45
+    reading_pause_base: float = 0.6
+    reading_seconds_per_word: float = 0.16
+
 
 @dataclass(frozen=True)
 class NarrationSegment:
@@ -48,6 +60,7 @@ class NarrationSegment:
     kind: str
     duration: float
     vocab: Optional[VocabEntry] = None
+    stage: str = "full"   # "wrong" or "full" — only meaningful for a contrast-rhythm row split into two slides
 
 
 def build_audio_plan(lesson: Lesson) -> List[SpeechCue]:
@@ -55,11 +68,33 @@ def build_audio_plan(lesson: Lesson) -> List[SpeechCue]:
 
     The format decides which column is spoken and whether it is worth hearing
     twice: a vocabulary word is read slowly and then at speed so a learner
-    catches it in isolation, while a corrected sentence only needs saying once.
+    catches it in isolation, a corrected sentence only needs saying once, and
+    a contrast-rhythm row reads both halves — the wrong sentence still gets
+    read aloud, on purpose: a buzzer plus an on-screen "SAI" tag mark it as
+    wrong the instant it's heard, so it teaches instead of misleading.
     """
     spec = lesson.spec
     plan: List[SpeechCue] = []
     for index, entry in enumerate(lesson.vocab):
+        if spec.contrast_rhythm:
+            wrong, right, _note = entry.columns
+            plan.append(
+                SpeechCue(
+                    kind=spec.slide_kind,
+                    text=strip_markup(wrong).strip(),
+                    vocab_index=index,
+                    role="wrong",
+                )
+            )
+            plan.append(
+                SpeechCue(
+                    kind=spec.slide_kind,
+                    text=strip_markup(right).strip(),
+                    vocab_index=index,
+                    role="right",
+                )
+            )
+            continue
         text = entry.columns[spec.spoken_column].strip()
         if spec.repeat_slowly:
             plan.append(SpeechCue(kind=WORD, text=text, slow=True, vocab_index=index))

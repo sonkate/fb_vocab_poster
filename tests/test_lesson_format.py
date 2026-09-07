@@ -61,13 +61,14 @@ def test_each_format_reads_its_rows_from_its_own_section():
     ]
 
 
-def test_a_contrast_format_narrates_the_correction_once_and_has_no_paragraph():
-    """A vocabulary word is worth hearing slowly then at speed; a corrected
-    sentence only needs saying once, and there is no paragraph to read."""
+def test_a_contrast_format_narrates_both_the_wrong_and_the_right_sentence():
+    """`mistake` reads the wrong sentence too — a buzzer and an on-screen SAI
+    tag mark it as wrong the instant it's heard, so reading it aloud teaches
+    rather than misleads. There is still no paragraph to read."""
     plan = build_audio_plan(mistake_lesson())
 
-    assert [cue.text for cue in plan] == ["I really like it."]
-    assert [cue.slow for cue in plan] == [False]
+    assert [cue.text for cue in plan] == ["I very like it.", "I really like it."]
+    assert [cue.role for cue in plan] == ["wrong", "right"]
 
 
 def test_a_format_without_a_paragraph_is_publishable_without_one():
