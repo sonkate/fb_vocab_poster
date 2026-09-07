@@ -10,6 +10,7 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 from moviepy.audio.AudioClip import AudioClip
+from moviepy.audio.fx.audio_fadeout import audio_fadeout
 from moviepy.editor import AudioFileClip, concatenate_audioclips
 
 from ...application.ports import DraftRef, Narration, SpeechSynthesizer, Workspace
@@ -25,6 +26,18 @@ from ...domain import (
 )
 
 FPS = 44100
+
+# Recorded stingers, kept local-only (see assets/sound/.gitkeep) since their
+# source license is a personal liability waiver, not a clear grant — see
+# generate-lessons SKILL.md's SFX note. Buzzer/ding fall back to the
+# synthesized tones below when a checkout doesn't have them.
+_SOUND_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+    "assets",
+    "sound",
+)
+_BUZZER_FILE = os.path.join(_SOUND_DIR, "wrong.mp3")
+_DING_FILE = os.path.join(_SOUND_DIR, "correct.mp3")
 
 
 def _silence(duration: float, fps: int = FPS) -> AudioClip:
@@ -70,6 +83,20 @@ def _ding(duration: float, fps: int = FPS) -> AudioClip:
     return concatenate_audioclips([_tone(880.0, half, fps), _tone(1318.5, half, fps)])
 
 
+def _sfx_clip(path: str, duration: float, synth, resources: List) -> AudioClip:
+    """Prefers the recorded stinger at `path`, cut down to `duration` with a
+    short fade-out so the trim doesn't click; falls back to the synthesized
+    tone when the asset isn't on disk. `resources` collects the underlying
+    `AudioFileClip` so `compose()` can close its reader once the track is
+    written — closing the faded/trimmed clip alone wouldn't release it."""
+    if os.path.isfile(path):
+        source = AudioFileClip(path)
+        resources.append(source)
+        trimmed = source.subclip(0, min(duration, source.duration))
+        return audio_fadeout(trimmed, min(0.08, duration / 4))
+    return synth(duration)
+
+
 @dataclass(frozen=True)
 class MoviePyNarrationComposer:
     synthesizer: SpeechSynthesizer
@@ -83,12 +110,14 @@ class MoviePyNarrationComposer:
         speech = self._speak(build_audio_plan(lesson), workdir)
         clips: List = []
         segments: List[NarrationSegment] = []
+        resources: List = list(speech.values())
 
         spec = lesson.spec
         if spec.contrast_rhythm:
-            row_clips, row_segments = self._contrast_track(lesson, speech)
+            row_clips, row_segments, row_resources = self._contrast_track(lesson, speech)
             clips.extend(row_clips)
             segments.extend(row_segments)
+            resources.extend(row_resources)
         else:
             for index, entry in enumerate(lesson.vocab):
                 fast = speech[f"word_{index}_normal"]
@@ -125,14 +154,14 @@ class MoviePyNarrationComposer:
             track.write_audiofile(out_path, fps=FPS, verbose=False, logger=None)
         finally:
             track.close()
-            for clip in speech.values():
+            for clip in resources:
                 clip.close()
 
         return Narration(audio_path=out_path, segments=tuple(segments))
 
     def _contrast_track(
         self, lesson: Lesson, speech: Dict[str, AudioFileClip]
-    ) -> Tuple[List, List[NarrationSegment]]:
+    ) -> Tuple[List, List[NarrationSegment], List]:
         """The "spot the mistake" rhythm: wrong sentence, buzz — its own slide,
         so the fix can't be read off-screen while it plays — then right
         sentence, ding, and a hold long enough to read the Vietnamese
@@ -140,12 +169,13 @@ class MoviePyNarrationComposer:
         spec = lesson.spec
         clips: List = []
         segments: List[NarrationSegment] = []
+        resources: List = []
 
         for index, entry in enumerate(lesson.vocab):
             wrong = speech[f"{spec.slide_kind}_{index}_wrong"]
             right = speech[f"{spec.slide_kind}_{index}_right"]
-            buzzer = _buzzer(self.timing.buzzer_duration)
-            ding = _ding(self.timing.ding_duration)
+            buzzer = _sfx_clip(_BUZZER_FILE, self.timing.buzzer_duration, _buzzer, resources)
+            ding = _sfx_clip(_DING_FILE, self.timing.ding_duration, _ding, resources)
             note_words = len(entry.columns[2].split())
             reading_pause = (
                 self.timing.reading_pause_base
@@ -172,7 +202,7 @@ class MoviePyNarrationComposer:
                 )
             )
 
-        return clips, segments
+        return clips, segments, resources
 
     def _speak(self, plan: List[SpeechCue], workdir: str) -> Dict[str, AudioFileClip]:
         """Renders every cue to disk and opens it, keyed by the cue's stable

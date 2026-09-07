@@ -53,4 +53,9 @@ drafts/*.md
 # Assets — only the brand images, which `scripts/build_brand_assets.py`
 # regenerates; assets/fonts/ stays tracked so a font added later isn't
 # silently swallowed the way a bare `assets/*` would swallow it.
+# assets/sound/ holds recorded SFX stinger files sourced from third parties
+# with an unclear license (a liability waiver, not a grant) — kept local-only
+# so they never enter git history. moviepy_composer falls back to synthesized
+# SFX when they're absent, so a fresh checkout builds fine without them.
 assets/brand/
+assets/sound
