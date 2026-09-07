@@ -46,10 +46,25 @@ def wrap_tokens(
 
 
 def paginate(lines: Sequence, per_page: int) -> List[List]:
-    """Splits wrapped lines into screenfuls."""
+    """Splits wrapped lines into screenfuls, spread as evenly as possible.
+
+    Filling every page to `per_page` before starting the next can strand a
+    handful of lines alone on a final page — a page as tall as the rest but
+    holding a fifth of the text reads as empty even once its narration time
+    is weighted correctly. Balancing page sizes keeps every page similarly
+    full instead.
+    """
     if not lines:
         return [[]]
-    return [list(lines[i:i + per_page]) for i in range(0, len(lines), per_page)]
+    pages = max(1, -(-len(lines) // per_page))  # ceil division
+    base, extra = divmod(len(lines), pages)
+    result: List[List] = []
+    start = 0
+    for page in range(pages):
+        size = base + (1 if page < extra else 0)
+        result.append(list(lines[start:start + size]))
+        start += size
+    return result
 
 
 def draw_token_line(
