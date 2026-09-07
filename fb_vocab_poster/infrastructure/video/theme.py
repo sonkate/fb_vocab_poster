@@ -27,7 +27,7 @@ _SCALED_FIELDS: Sequence[str] = (
     "rule_offset", "body_offset", "accent_bar_height",
     "word_ipa_gap", "ipa_rule_gap", "rule_meaning_gap",
     "meaning_inset", "rule_half_width", "rule_thickness",
-    "outro_mark_size", "outro_detail_size",
+    "outro_mark_size", "outro_detail_size", "outro_cta_size", "outro_cta_gap",
 )
 
 ASSETS_DIR = os.path.join(
@@ -148,6 +148,12 @@ class Theme:
     # with the hero word or the read-along copy.
     outro_mark_size: int = 88
     outro_detail_size: int = 40
+
+    # The call-to-action sits below the tagline/topic block, set apart by its
+    # own gap so it reads as a separate prompt rather than another detail line.
+    outro_cta_size: int = 46
+    outro_cta_gap: int = 56
+    outro_cta: str = "Theo dõi để tiến bộ mỗi ngày"
 
     # The wordmark is two-toned — the tail carries the accent colour, and that
     # single repeated detail is what makes the page recognisable in a feed.

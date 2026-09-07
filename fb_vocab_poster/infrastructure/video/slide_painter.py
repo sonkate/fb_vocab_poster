@@ -157,6 +157,7 @@ class PreparedSlides:
 
         mark_font = theme.font(theme.outro_mark_size, bold=True)
         detail_font = theme.font(theme.outro_detail_size)
+        cta_font = theme.font(theme.outro_cta_size, bold=True)
 
         lead = f"{theme.brand_lead} "
         lead_width = draw.textlength(lead, font=mark_font)
@@ -164,12 +165,15 @@ class PreparedSlides:
 
         mark_leading = text_utils.line_height(mark_font)
         detail_leading = text_utils.line_height(detail_font)
+        cta_leading = text_utils.line_height(cta_font)
         total = (
             mark_leading
             + theme.word_ipa_gap
             + theme.accent_bar_height
             + theme.rule_meaning_gap
             + detail_leading * 2
+            + theme.outro_cta_gap
+            + cta_leading
         )
 
         y = (theme.height - total) / 2
@@ -186,13 +190,17 @@ class PreparedSlides:
         y = text_utils.draw_centered(
             draw, [theme.tagline], detail_font, y, theme.text, theme.width
         )
-        text_utils.draw_centered(
+        y = text_utils.draw_centered(
             draw,
             [f"{self.lesson.topic} · {self.lesson.level}"],
             detail_font,
             y,
             theme.muted,
             theme.width,
+        )
+        y += theme.outro_cta_gap
+        text_utils.draw_centered(
+            draw, [theme.outro_cta], cta_font, y, theme.accent, theme.width
         )
         return image
 
