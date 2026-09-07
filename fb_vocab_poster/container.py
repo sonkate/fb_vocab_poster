@@ -27,9 +27,9 @@ from .infrastructure.ledger import (
 )
 from .infrastructure.publishing import FacebookPagePublisher
 from .infrastructure.video import (
-    FEED_HEIGHT,
     MoviePyVideoRenderer,
     PillowSlidePainter,
+    REEL_HEIGHT,
     Theme,
 )
 from .interface.console import ConsoleReporter
@@ -63,12 +63,11 @@ class Container:
 
     @cached_property
     def theme(self) -> Theme:
-        """4:5, Meta's recommended portrait size for a feed post — which is what
-        the publisher actually creates, since it posts to `/{page}/videos` and
-        not to the Reels endpoint. Every layout derives from the canvas, so this
-        is the only line that decides the output shape; a real Reel needs
-        `REEL_HEIGHT` here *and* a publisher that uploads to `/video_reels`."""
-        return Theme(height=FEED_HEIGHT)
+        """9:16 canvas, still posted as an ordinary feed video — the publisher
+        uploads to `/{page}/videos`, not `/video_reels`, so this is a taller
+        frame, not an actual Reel. Every layout derives from the canvas, so
+        this is the only line that decides the output shape."""
+        return Theme(height=REEL_HEIGHT)
 
     @cached_property
     def drafter(self) -> LessonDrafter:

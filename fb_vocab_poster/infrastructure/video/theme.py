@@ -11,8 +11,24 @@ from .text import leading
 RGB = Tuple[int, int, int]
 
 SQUARE_HEIGHT = 1080   # 1:1, the original feed post
-FEED_HEIGHT = 1350     # 4:5, Meta's recommended portrait feed size
+FEED_HEIGHT = 1350     # 4:5, Meta's recommended portrait feed size — the
+                        # baseline every size in _SCALED_FIELDS is tuned at
 REEL_HEIGHT = 1920     # 9:16, full-screen Reels
+
+# Content type sizes and internal gaps, scaled by Theme.__post_init__ so a
+# taller canvas fills with bigger content instead of the same stack floating
+# in more empty space. Everything else — brand chrome (wordmark, chip,
+# footer) and canvas margins — stays a fixed pixel size on any height, since
+# that fixed size is what makes it recognisable across formats.
+_SCALED_FIELDS: Sequence[str] = (
+    "body_size", "line_height", "entry_gap", "heading_size",
+    "word_size", "word_size_min", "ipa_size", "meaning_size",
+    "contrast_from_size", "contrast_to_size",
+    "rule_offset", "body_offset", "accent_bar_height",
+    "word_ipa_gap", "ipa_rule_gap", "rule_meaning_gap",
+    "meaning_inset", "rule_half_width", "rule_thickness",
+    "outro_mark_size", "outro_detail_size",
+)
 
 ASSETS_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
@@ -49,12 +65,13 @@ IPA_FONT_CANDIDATES: Sequence[str] = (
 class Theme:
     """The "Lên Band" palette and the canvas it is painted on.
 
-    Width stays at 1080 whatever the height, so the type scale and margins
-    below never need retuning — only vertical room changes. The default is
-    `FEED_HEIGHT`, the 4:5 feed post `container.py` builds; pass
-    `REEL_HEIGHT` for 9:16 Reels or `SQUARE_HEIGHT` for the original square.
-    Every layout below derives from these two numbers rather than
-    hard-coding a canvas size.
+    Width stays at 1080 whatever the height. `container.py` currently builds
+    at `REEL_HEIGHT` (9:16); this field defaults to `FEED_HEIGHT` (4:5) as
+    the size every type/gap value below is tuned against — `__post_init__`
+    scales them for any other height, so a taller canvas fills with bigger
+    content instead of the same stack floating in more empty space. Fixed
+    brand chrome (wordmark, chip, footer, margins) is exempt: see
+    `_SCALED_FIELDS`.
     """
 
     width: int = 1080
@@ -141,6 +158,13 @@ class Theme:
     brand_fonts: Sequence[str] = field(default=BRAND_FONT_CANDIDATES)
     brand_bold_fonts: Sequence[str] = field(default=BRAND_BOLD_FONT_CANDIDATES)
     ipa_fonts: Sequence[str] = field(default=IPA_FONT_CANDIDATES)
+
+    def __post_init__(self) -> None:
+        scale = self.height / FEED_HEIGHT
+        if scale == 1.0:
+            return
+        for name in _SCALED_FIELDS:
+            object.__setattr__(self, name, round(getattr(self, name) * scale))
 
     @property
     def accent_soft(self) -> RGB:
