@@ -46,8 +46,13 @@ class NarrationTiming:
     # The contrast rhythm (`mistake` only): wrong sentence, buzz, right
     # sentence, ding, then a hold sized to the Vietnamese explanation so a
     # viewer has time to actually read it before the next row starts.
-    buzzer_duration: float = 0.45
-    ding_duration: float = 0.45
+    # The buzzer/ding stingers themselves run ~2s — matching the recorded
+    # assets' full length. This overshoots the format's 35-45s target on its
+    # own (5 rows x ~3.1s of extra SFX vs the original 0.45s stubs); the user
+    # chose to keep both full-length and the reading pause untouched rather
+    # than trim either, accepting a longer video.
+    buzzer_duration: float = 2.0
+    ding_duration: float = 2.0
     reading_pause_base: float = 0.6
     reading_seconds_per_word: float = 0.16
 
