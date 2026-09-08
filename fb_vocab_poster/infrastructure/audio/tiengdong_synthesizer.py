@@ -23,7 +23,7 @@ from dataclasses import dataclass
 
 import requests
 
-from ...domain import SpeechCue
+from ...domain import HOOK, SpeechCue
 
 CONVERT_URL = "https://tiengdong.com/wp-admin/admin-ajax.php"
 REQUEST_TIMEOUT_SECONDS = 60
@@ -38,11 +38,18 @@ class TiengDongSpeechSynthesizer:
     php_session_id: str
     cookie_id: str
     voice: str = "en-US-Standard-E"
+    # The hook slide's line is Vietnamese (see domain.narration.build_audio_plan)
+    # — everything else spoken is the English being taught, so only the hook
+    # switches voice.
+    hook_voice: str = "vi-VN-Wavenet-C"
     speed: float = 1.0
     slow_speed: float = 0.7
     volume: float = 1.5
     pitch: float = 1.0
     timeout: int = REQUEST_TIMEOUT_SECONDS
+
+    def _voice_for(self, cue: SpeechCue) -> str:
+        return self.hook_voice if cue.kind == HOOK else self.voice
 
     def synthesize(self, cue: SpeechCue, out_path: str) -> str:
         if not self.php_session_id or not self.cookie_id:
@@ -55,7 +62,7 @@ class TiengDongSpeechSynthesizer:
             data={
                 "action": "atts_convert",
                 "text": cue.text,
-                "voice": self.voice,
+                "voice": self._voice_for(cue),
                 "speed": self.slow_speed if cue.slow else self.speed,
                 "volume": self.volume,
                 "pitch": self.pitch,

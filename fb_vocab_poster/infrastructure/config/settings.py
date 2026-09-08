@@ -20,6 +20,9 @@ class Settings:
     tiengdong_php_session_id: str = ""
     tiengdong_cookie_id: str = ""
     tiengdong_voice: str = "en-US-Standard-E"
+    # The hook slide's line is Vietnamese (see domain.narration.build_audio_plan) —
+    # everything else spoken is the English being taught, so it needs its own voice.
+    tiengdong_hook_voice: str = "vi-VN-Wavenet-C"
     firestore_credentials: str = ""
     firestore_collection: str = "taught_vocabulary"
     drafts_dir: str = "drafts"
@@ -53,6 +56,9 @@ class Settings:
             tiengdong_php_session_id=os.getenv("TIENGDONG_PHPSESSID", ""),
             tiengdong_cookie_id=os.getenv("TIENGDONG_COOKIE_ID", ""),
             tiengdong_voice=os.getenv("TIENGDONG_VOICE", defaults.tiengdong_voice),
+            tiengdong_hook_voice=os.getenv(
+                "TIENGDONG_HOOK_VOICE", defaults.tiengdong_hook_voice
+            ),
             firestore_credentials=os.getenv("FIRESTORE_CREDENTIALS", ""),
             firestore_collection=os.getenv(
                 "FIRESTORE_COLLECTION", defaults.firestore_collection

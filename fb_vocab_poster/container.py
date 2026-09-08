@@ -120,6 +120,7 @@ class Container:
                 php_session_id=self.settings.tiengdong_php_session_id,
                 cookie_id=self.settings.tiengdong_cookie_id,
                 voice=self.settings.tiengdong_voice,
+                hook_voice=self.settings.tiengdong_hook_voice,
             ),
             workspace=self.workspace,
         )
