@@ -165,11 +165,16 @@ Followers are almost entirely Vietnamese learners, so the line is drawn by
 role, not by column position: **what the video is teaching stays English;
 what helps a viewer understand it is Vietnamese.**
 
-- **Stays English** — vocab words, IPA, the paragraph, and a `mistake` row's
-  wrong/corrected sentences. This is the target language; translating any of
-  it removes the lesson.
+- **Stays English** — `topic` (and therefore the draft/output filename, since
+  it's slugged from `topic`), vocab words, IPA, the paragraph, and a
+  `mistake`/`upgrade` row's wrong-and-corrected or weak-and-strong sentences.
+  This is the target language; translating any of it removes the lesson.
+  `topic` stays English even where that puts an English word at the foot of
+  an otherwise-Vietnamese slide (the series/topic footer) — that's accepted,
+  not a bug to fix by adding a second, Vietnamese-only display field.
 - **Goes Vietnamese** — Vocab Drill's **meaning column**, `mistake`'s "why"
-  column, `upgrade`'s "when to use it" column, the hook line, and the caption.
+  column, `upgrade`'s "when to use it" column, `pronunciation`'s tip column,
+  the hook line, and the caption.
 
 `infrastructure/content/anthropic_drafter.py`'s prompt already asks for a
 Vietnamese meaning, so an auto-drafted vocab lesson should already come back
