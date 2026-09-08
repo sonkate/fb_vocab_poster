@@ -62,11 +62,19 @@ class FormatSpec:
     needs_paragraph: bool
     series_label: str = ""           # the show's name, worn at the foot of every slide
 
-    # The "spot the mistake" rhythm: read the wrong sentence, buzz, read the
-    # right one, ding, then hold for the explanation — spread across two
-    # slides per row instead of one. Only `mistake` asks for it; `spoken_column`
-    # and `repeat_slowly` are unused for a format that sets this.
+    # The "before/after" rhythm: read the first sentence, a stinger, read the
+    # second one, another stinger, then hold for the explanation — spread
+    # across two slides per row instead of one. `mistake` and `upgrade` both
+    # ask for it; `spoken_column` and `repeat_slowly` are unused for a format
+    # that sets this.
     contrast_rhythm: bool = False
+
+    # Which stinger plays after each half — a name the audio composer looks
+    # up, not a sound the domain knows how to make. "" means silence instead:
+    # `upgrade`'s weak phrase isn't wrong, so it gets a soft transition
+    # rather than a buzz, and nothing plays before the reading pause at all.
+    contrast_from_stinger: str = ""
+    contrast_to_stinger: str = ""
 
     # Plays as the opening hook slide when a draft leaves `hook:` blank in its
     # frontmatter — every format needs one, since the hook slide now runs
@@ -102,6 +110,8 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         needs_paragraph=False,
         series_label="Sai chỗ nào",
         contrast_rhythm=True,
+        contrast_from_stinger="buzz",
+        contrast_to_stinger="ding",
         default_hook="Bạn có đang mắc lỗi này không?",
     ),
     LessonFormat.UPGRADE: FormatSpec(
@@ -112,6 +122,8 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         repeat_slowly=False,
         needs_paragraph=False,
         series_label="Đừng nói · nói",
+        contrast_rhythm=True,
+        contrast_from_stinger="transition",
         default_hook="Cách nói này nghe sang hơn hẳn",
     ),
 }

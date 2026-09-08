@@ -6,7 +6,7 @@ because real durations are the one thing the domain cannot know in advance.
 """
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from moviepy.audio.AudioClip import AudioClip
@@ -82,6 +82,22 @@ def _ding(duration: float, fps: int = FPS) -> AudioClip:
     shape, distinct from the buzzer's single falling tone."""
     half = duration / 2
     return concatenate_audioclips([_tone(880.0, half, fps), _tone(1318.5, half, fps)])
+
+
+def _transition(duration: float, fps: int = FPS) -> AudioClip:
+    """`upgrade`'s weak->strong cut: a soft single tone, quieter than the
+    ding and with no rise/fall shape of its own — neither half of an
+    upgrade row is wrong or confirmed-right, just weaker or stronger, so the
+    sound marks a scene change rather than a verdict."""
+
+    def make_frame(t):
+        t_arr = np.atleast_1d(np.asarray(t, dtype=float))
+        envelope = np.sin(np.pi * np.clip(t_arr, 0, duration) / duration) ** 0.5
+        mono = 0.16 * np.sin(2 * np.pi * 520.0 * t_arr) * envelope
+        stereo = np.column_stack([mono, mono])
+        return stereo if np.ndim(t) else stereo[0]
+
+    return AudioClip(make_frame, duration=duration, fps=fps)
 
 
 def _sfx_clip(path: str, duration: float, synth, resources: List) -> AudioClip:
@@ -170,13 +186,25 @@ class MoviePyNarrationComposer:
 
         return Narration(audio_path=out_path, segments=tuple(segments))
 
+    def _stinger(self, name: str, resources: List) -> Optional[AudioClip]:
+        """Looks up a stinger by the name `FormatSpec.contrast_from/to_stinger`
+        declares — the domain names the role, this is the one place that
+        knows what it sounds like. `""` means no stinger at all."""
+        if name == "buzz":
+            return _sfx_clip(_BUZZER_FILE, self.timing.buzzer_duration, _buzzer, resources)
+        if name == "ding":
+            return _sfx_clip(_DING_FILE, self.timing.ding_duration, _ding, resources)
+        if name == "transition":
+            return _transition(self.timing.transition_duration)
+        return None
+
     def _contrast_track(
         self, lesson: Lesson, speech: Dict[str, AudioFileClip]
     ) -> Tuple[List, List[NarrationSegment], List]:
-        """The "spot the mistake" rhythm: wrong sentence, buzz — its own slide,
-        so the fix can't be read off-screen while it plays — then right
-        sentence, ding, and a hold long enough to read the Vietnamese
-        explanation before the next row starts."""
+        """The "before/after" rhythm: first sentence, a stinger — its own
+        slide, so the fix/upgrade can't be read off-screen while it plays —
+        then the second sentence, another stinger, and a hold long enough to
+        read the Vietnamese explanation before the next row starts."""
         spec = lesson.spec
         clips: List = []
         segments: List[NarrationSegment] = []
@@ -185,29 +213,33 @@ class MoviePyNarrationComposer:
         for index, entry in enumerate(lesson.vocab):
             wrong = speech[f"{spec.slide_kind}_{index}_wrong"]
             right = speech[f"{spec.slide_kind}_{index}_right"]
-            buzzer = _sfx_clip(_BUZZER_FILE, self.timing.buzzer_duration, _buzzer, resources)
-            ding = _sfx_clip(_DING_FILE, self.timing.ding_duration, _ding, resources)
+            from_stinger = self._stinger(spec.contrast_from_stinger, resources)
+            to_stinger = self._stinger(spec.contrast_to_stinger, resources)
             note_words = len(entry.columns[2].split())
             reading_pause = (
                 self.timing.reading_pause_base
                 + self.timing.reading_seconds_per_word * note_words
             )
 
-            clips.extend([wrong, buzzer])
+            clips.extend([wrong, *([from_stinger] if from_stinger else [])])
             segments.append(
                 NarrationSegment(
                     kind=spec.slide_kind,
-                    duration=wrong.duration + buzzer.duration,
+                    duration=wrong.duration + (from_stinger.duration if from_stinger else 0),
                     vocab=entry,
                     stage="wrong",
                 )
             )
 
-            clips.extend([right, ding, _silence(reading_pause)])
+            clips.extend([right, *([to_stinger] if to_stinger else []), _silence(reading_pause)])
             segments.append(
                 NarrationSegment(
                     kind=spec.slide_kind,
-                    duration=right.duration + ding.duration + reading_pause,
+                    duration=(
+                        right.duration
+                        + (to_stinger.duration if to_stinger else 0)
+                        + reading_pause
+                    ),
                     vocab=entry,
                     stage="full",
                 )

@@ -57,6 +57,13 @@ class NarrationTiming:
     # than trim either, accepting a longer video.
     buzzer_duration: float = 2.0
     ding_duration: float = 2.0
+
+    # `upgrade`'s weak->strong cut (`contrast_from_stinger="transition"`):
+    # synthesized only, so it isn't pinned to a recorded asset's length like
+    # buzzer/ding are — short on purpose, it's a scene-change cue, not a
+    # stinger with its own dramatic weight.
+    transition_duration: float = 0.35
+
     reading_pause_base: float = 0.6
     reading_seconds_per_word: float = 0.16
 

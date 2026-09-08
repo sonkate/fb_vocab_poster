@@ -52,11 +52,22 @@ def test_the_reveal_slide_picks_out_only_the_corrected_word_in_gold():
     assert _count_color(marked, THEME.text) > _count_color(unmarked, THEME.text)
 
 
-def test_upgrade_still_renders_through_the_untouched_contrast_layout():
-    """`upgrade` never gained the wrong/right rhythm — it still paints through
-    `_contrast`, unaffected by anything the mistake rhythm added."""
+def test_upgrades_reveal_slide_still_renders_through_the_same_contrast_layout():
+    """`upgrade` now runs the same two-slide before/after rhythm as `mistake`
+    (Slide A: `_upgrade_weak`, below), but its reveal slide is still drawn by
+    the original, unmodified `_contrast` layout."""
     entry = VocabEntry("very tired", "exhausted", "Band 5 -> 7.5, same idea")
     image = _prepared(entry, LessonFormat.UPGRADE)._contrast(entry)
 
     assert _count_color(image, THEME.accent) > 0
     assert _count_color(image, THEME.danger) > 0
+
+
+def test_the_weak_slide_wears_a_neutral_badge_not_a_danger_one():
+    """A weak phrase isn't wrong, so its own slide (Slide A) must not use
+    the mistake rhythm's danger-red badge — only the neutral chip colour."""
+    entry = VocabEntry("very tired", "exhausted", "Band 5 -> 7.5, same idea")
+    image = _prepared(entry, LessonFormat.UPGRADE)._upgrade_weak(entry)
+
+    assert _count_color(image, THEME.muted) > 0
+    assert _count_color(image, THEME.danger) == 0

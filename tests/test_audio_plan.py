@@ -88,3 +88,21 @@ def test_contrast_row_clip_names_are_stable_and_unique_per_cue():
     names = [cue.clip_name for cue in build_audio_plan(mistake_lesson())[1:]]
 
     assert names == ["mistake_0_wrong", "mistake_0_right", "mistake_1_wrong", "mistake_1_right"]
+
+
+def upgrade_lesson() -> Lesson:
+    return Lesson(
+        topic="Small talk",
+        level=CEFRLevel.B1,
+        format=LessonFormat.UPGRADE,
+        vocab=(VocabEntry("very tired", "exhausted", "Band 5 -> 7.5, same idea"),),
+    )
+
+
+def test_upgrade_also_runs_the_before_after_rhythm_speaking_both_halves():
+    """`upgrade` shares the same generic contrast-rhythm plan as `mistake` —
+    both the weak and the strong phrase get read, in order."""
+    plan = build_audio_plan(upgrade_lesson())[1:]   # [0] is the hook
+
+    assert [cue.text for cue in plan] == ["very tired", "exhausted"]
+    assert [cue.role for cue in plan] == ["wrong", "right"]

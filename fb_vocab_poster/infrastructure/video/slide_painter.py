@@ -52,7 +52,11 @@ class PreparedSlides:
         elif request.kind == WORD:
             image = self._word(request.vocab)
         elif request.kind == UPGRADE:
-            image = self._contrast(request.vocab)
+            image = (
+                self._upgrade_weak(request.vocab)
+                if request.stage == "wrong"
+                else self._contrast(request.vocab)
+            )
         elif request.kind == MISTAKE:
             image = (
                 self._contrast_wrong(request.vocab)
@@ -319,11 +323,9 @@ class PreparedSlides:
         return image
 
     def _contrast(self, entry: VocabEntry) -> Image.Image:
-        """Before above, after below: `upgrade`'s layout — a weak phrase and
-        its stronger replacement, on one slide. `mistake` used to share this
-        too, but now runs its own two-slide rhythm below (`_contrast_wrong`,
-        `_contrast_reveal`); this one is untouched so upgrade's slide can't
-        drift with it."""
+        """Slide B of an upgrade row: before above, after below — the weak
+        phrase and its stronger replacement together, while the reading
+        pause holds for the explanation. Slide A is `_upgrade_weak`, below."""
         theme = self.theme
         image, draw = self._canvas()
         content_top, content_bottom = self._frame(draw)
@@ -368,6 +370,44 @@ class PreparedSlides:
             text_utils.draw_centered(
                 draw, note_lines, note_font, y, theme.muted, theme.width
             )
+        return image
+
+    def _upgrade_weak(self, entry: VocabEntry) -> Image.Image:
+        """Slide A of an upgrade row: only the weak phrase, tagged "TRƯỚC"
+        while the transition plays. Unlike `_contrast_wrong` this isn't
+        marked as an error — a weak phrase isn't wrong, just plainer than
+        what replaces it — so it keeps the neutral badge/text colour `_badge`
+        already uses for a level chip, not the mistake rhythm's danger red."""
+        theme = self.theme
+        image, draw = self._canvas()
+        content_top, content_bottom = self._frame(draw)
+
+        before, _after, _note = entry.columns
+        font = theme.font(theme.contrast_to_size)
+        marked = "**" in before
+
+        if marked:
+            lines = text_utils.wrap_tokens(draw, fragments_of(before), font, theme.max_width)
+            block_height = len(lines) * text_utils.line_height(font)
+        else:
+            lines = text_utils.wrap_plain(draw, before, font, theme.max_width)
+            block_height = text_utils.block_height(lines, font)
+
+        badge_font = theme.font(theme.badge_size, bold=True)
+        badge_height = text_utils.line_height(badge_font) + theme.badge_padding_y * 2
+
+        total = badge_height + theme.badge_gap + block_height
+        y = content_top + (content_bottom - content_top - total) / 2
+        y = self._badge(draw, "TRƯỚC", y, theme.muted)
+        y += theme.badge_gap
+
+        if marked:
+            text_utils.draw_centered_tokens(
+                draw, lines, font, y, theme.text, theme.width,
+                highlight_color=theme.muted,
+            )
+        else:
+            text_utils.draw_centered(draw, lines, font, y, theme.text, theme.width)
         return image
 
     def _badge(self, draw, label: str, top: float, background) -> float:
