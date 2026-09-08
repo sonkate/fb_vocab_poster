@@ -14,7 +14,7 @@ Three CLI commands (see `Makefile` and `main.py`):
 
 ```
 venv/bin/python main.py draft "<Topic>" <LEVEL> [--format vocab|mistake|upgrade]
-venv/bin/python main.py build   <draft.md>    # renders output/<slug>...mp4 (no posting)
+venv/bin/python main.py build   <draft.md>    # renders output/<YYYY-MM>/<slug>...mp4 (no posting)
 venv/bin/python main.py publish <draft.md>    # renders AND posts to the Facebook Page
 ```
 
@@ -277,7 +277,11 @@ not a beat to coast on — so keep making it the strongest row regardless.
 venv/bin/python main.py build "<draft path>"
 ```
 
-Prints `Video ready: output/<slug>....mp4`. Then actually check it:
+Prints `Video ready: output/<YYYY-MM>/<slug>....mp4` — the month comes from
+the draft's own timestamp, not today's date, so a re-render of an old draft
+lands back in its original month folder. (Narration `.mp3` and the per-slide
+intermediates render under `output/_work/`, apart from the finished videos.)
+Then actually check it:
 
 ```
 ffprobe -v error -show_entries format=duration \

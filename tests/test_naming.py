@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fb_vocab_poster.domain.level import CEFRLevel
-from fb_vocab_poster.domain.naming import draft_basename, slugify
+from fb_vocab_poster.domain.naming import basename_month, draft_basename, slugify
 
 
 def test_a_vietnamese_topic_transliterates_instead_of_losing_its_letters():
@@ -22,3 +22,11 @@ def test_draft_basename_stays_ascii_end_to_end():
     assert draft_basename("Email công việc", CEFRLevel.B1, when) == (
         "email-cong-viec_B1_20260101-120000"
     )
+
+
+def test_basename_month_reads_the_month_out_of_the_basenames_own_timestamp():
+    """The output folder a video lands in comes from when the draft was
+    created, not whatever day `build` happens to run — so a re-render months
+    later still lands back in the original month's folder."""
+    assert basename_month("work-email_B1_20260908-231010") == "2026-09"
+    assert basename_month("ordering-coffee_B1_20260101-120000") == "2026-01"

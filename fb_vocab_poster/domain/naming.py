@@ -33,3 +33,14 @@ def draft_basename(topic: str, level: CEFRLevel, created_at: datetime) -> str:
     """e.g. `ordering-coffee_B1_20260101-120000` — the stem shared by the draft
     markdown, its narration mp3 and its rendered mp4."""
     return f"{slugify(topic)}_{level}_{created_at.strftime(TIMESTAMP_FORMAT)}"
+
+
+def basename_month(basename: str) -> str:
+    """The `YYYY-MM` folder a basename's own timestamp belongs in, e.g.
+    `work-email_B1_20260908-231010` -> `2026-09`. Read from the timestamp the
+    draft was created with, not the system clock at render time, so rebuilding
+    an old draft's video lands back in the same month folder instead of
+    wherever `build` happened to run today."""
+    timestamp = basename.rsplit("_", 1)[-1]
+    created_at = datetime.strptime(timestamp, TIMESTAMP_FORMAT)
+    return created_at.strftime("%Y-%m")
