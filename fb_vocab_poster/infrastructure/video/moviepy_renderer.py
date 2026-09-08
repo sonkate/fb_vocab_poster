@@ -6,7 +6,15 @@ Implements `application.ports.VideoRenderer`. Slide durations come straight from
 from dataclasses import dataclass, field
 from typing import List
 
-from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips
+import numpy as np
+from moviepy.editor import (
+    AudioFileClip,
+    CompositeVideoClip,
+    ImageClip,
+    VideoClip,
+    concatenate_videoclips,
+)
+from moviepy.video.fx.fadein import fadein
 
 from ...application.ports import DraftRef, Narration, Workspace
 from ...domain import Lesson, build_slide_plan
@@ -14,6 +22,13 @@ from .slide_painter import PillowSlidePainter
 from .theme import Theme
 
 FPS = 24
+
+# Every slide fades in rather than hard-cutting — a static frame reads as a
+# photo and gets scrolled past; a fade is the cheapest possible pattern
+# interrupt that says "this is playing". Capped per-slide below so a very
+# short one (e.g. the mistake format's "wrong" stage) is never held at less
+# than half-visible for most of its own duration.
+SLIDE_FADE_IN = 0.35
 
 
 @dataclass(frozen=True)
@@ -31,11 +46,15 @@ class MoviePyVideoRenderer:
         plan = build_slide_plan(narration.segments, prepared.paragraph_page_weights)
 
         clips: List[ImageClip] = [
-            ImageClip(prepared.paint(request, workdir, index)).set_duration(request.duration)
+            fadein(
+                ImageClip(prepared.paint(request, workdir, index)).set_duration(request.duration),
+                min(SLIDE_FADE_IN, request.duration / 2),
+            )
             for index, request in enumerate(plan)
         ]
 
         video = concatenate_videoclips(clips, method="compose")
+        video = CompositeVideoClip([video, self._progress_bar(video.duration)])
         audio = AudioFileClip(narration.audio_path)
         video = video.set_audio(audio).set_fps(self.fps)
         try:
@@ -50,3 +69,23 @@ class MoviePyVideoRenderer:
             video.close()
             audio.close()
         return out_path
+
+    def _progress_bar(self, duration: float) -> VideoClip:
+        """A bar along the bottom edge that fills over the video's whole
+        runtime — the one element guaranteed to keep moving even through a
+        long silent reading pause, which is what actually satisfies "sống
+        được khi tắt tiếng" rather than just decorating individual slides."""
+        theme = self.theme
+        height = theme.progress_bar_height
+        track = np.array(theme.progress_track, dtype=np.uint8)
+        fill = np.array(theme.accent, dtype=np.uint8)
+
+        def make_frame(t):
+            frame = np.tile(track, (height, theme.width, 1))
+            filled = int(theme.width * min(t / duration, 1.0))
+            if filled:
+                frame[:, :filled] = fill
+            return frame
+
+        bar = VideoClip(make_frame, duration=duration)
+        return bar.set_position((0, theme.height - height))

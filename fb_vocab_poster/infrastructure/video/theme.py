@@ -30,6 +30,7 @@ _SCALED_FIELDS: Sequence[str] = (
     "outro_mark_size", "outro_detail_size", "outro_cta_size", "outro_cta_gap",
     "badge_size", "badge_padding_x", "badge_padding_y", "badge_radius", "badge_gap",
     "hook_size", "hook_size_min",
+    "progress_bar_height",
 )
 
 ASSETS_DIR = os.path.join(
@@ -174,6 +175,13 @@ class Theme:
     # and those exact strings landed on 4 lines instead.
     hook_size: int = 200
     hook_size_min: int = 90
+
+    # A thin bar along the very bottom edge, filling left to right over the
+    # whole video's runtime. It is the one thing on screen that never stops
+    # moving, so a muted viewer staring at an otherwise-static reading pause
+    # still has visible proof the video is alive, not frozen.
+    progress_bar_height: int = 10
+    progress_track: RGB = (44, 58, 71)   # a shade lighter than `background` — visible as the unfilled track, not just empty canvas
 
     # The wordmark is two-toned — the tail carries the accent colour, and that
     # single repeated detail is what makes the page recognisable in a feed.
