@@ -16,28 +16,18 @@ def test_buzz_and_ding_run_the_full_recorded_stinger_length():
     assert composer._stinger("ding", []).duration == timing.ding_duration
 
 
-def test_the_upgrade_transition_is_shorter_than_either_mistake_stinger():
-    """The transition is synthesized, not a recorded asset, and isn't meant
-    to carry a verdict — it should read as brief, not as a stinger."""
-    composer = _composer()
-    timing = composer.timing
-    transition = composer._stinger("transition", [])
-
-    assert transition.duration == timing.transition_duration
-    assert transition.duration < timing.buzzer_duration
-    assert transition.duration < timing.ding_duration
-
-
 def test_a_blank_stinger_name_means_no_sound_at_all():
     assert _composer()._stinger("", []) is None
 
 
-def test_the_default_timing_gives_upgrade_no_second_stinger():
-    """`upgrade`'s FormatSpec leaves `contrast_to_stinger` blank — nothing
-    plays before the reading pause, unlike `mistake`'s ding."""
+def test_upgrade_shares_the_exact_same_stingers_as_mistake():
+    """The user chose one consistent audio signature across formats over
+    distinguishing "weak" from "wrong" — so `upgrade` reuses `mistake`'s
+    buzz/ding instead of a format-specific sound."""
     from fb_vocab_poster.domain import FORMATS, LessonFormat
 
-    spec = FORMATS[LessonFormat.UPGRADE]
+    mistake = FORMATS[LessonFormat.MISTAKE]
+    upgrade = FORMATS[LessonFormat.UPGRADE]
 
-    assert spec.contrast_from_stinger == "transition"
-    assert spec.contrast_to_stinger == ""
+    assert upgrade.contrast_from_stinger == mistake.contrast_from_stinger == "buzz"
+    assert upgrade.contrast_to_stinger == mistake.contrast_to_stinger == "ding"

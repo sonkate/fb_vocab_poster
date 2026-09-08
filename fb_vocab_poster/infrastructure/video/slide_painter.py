@@ -374,10 +374,12 @@ class PreparedSlides:
 
     def _upgrade_weak(self, entry: VocabEntry) -> Image.Image:
         """Slide A of an upgrade row: only the weak phrase, tagged "TRƯỚC"
-        while the transition plays. Unlike `_contrast_wrong` this isn't
-        marked as an error — a weak phrase isn't wrong, just plainer than
-        what replaces it — so it keeps the neutral badge/text colour `_badge`
-        already uses for a level chip, not the mistake rhythm's danger red."""
+        while the buzzer plays. Unlike `_contrast_wrong` this isn't marked as
+        an error — a weak phrase isn't wrong, just plainer than what
+        replaces it — so it keeps the neutral badge/text colour `_badge`
+        already uses for a level chip, not the mistake rhythm's danger red.
+        The sound is shared with `mistake` (one signature across formats),
+        but the visual stays distinct on purpose."""
         theme = self.theme
         image, draw = self._canvas()
         content_top, content_bottom = self._frame(draw)

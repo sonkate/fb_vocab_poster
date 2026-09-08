@@ -47,22 +47,18 @@ class NarrationTiming:
     # plus a short beat before the first content slide cuts in.
     hook_pause: float = 0.4
 
-    # The contrast rhythm (`mistake` only): wrong sentence, buzz, right
-    # sentence, ding, then a hold sized to the Vietnamese explanation so a
-    # viewer has time to actually read it before the next row starts.
+    # The contrast rhythm (`mistake` and `upgrade`): first half, buzz, second
+    # half, ding, then a hold sized to the Vietnamese explanation so a
+    # viewer has time to actually read it before the next row starts. Both
+    # formats share the same two stingers on purpose — the user chose one
+    # consistent audio signature over distinguishing "weak" from "wrong".
     # The buzzer/ding stingers themselves run ~2s — matching the recorded
-    # assets' full length. This overshoots the format's 35-45s target on its
+    # assets' full length. This overshoots `mistake`'s 35-45s target on its
     # own (5 rows x ~3.1s of extra SFX vs the original 0.45s stubs); the user
     # chose to keep both full-length and the reading pause untouched rather
     # than trim either, accepting a longer video.
     buzzer_duration: float = 2.0
     ding_duration: float = 2.0
-
-    # `upgrade`'s weak->strong cut (`contrast_from_stinger="transition"`):
-    # synthesized only, so it isn't pinned to a recorded asset's length like
-    # buzzer/ding are — short on purpose, it's a scene-change cue, not a
-    # stinger with its own dramatic weight.
-    transition_duration: float = 0.35
 
     reading_pause_base: float = 0.6
     reading_seconds_per_word: float = 0.16

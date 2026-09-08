@@ -84,22 +84,6 @@ def _ding(duration: float, fps: int = FPS) -> AudioClip:
     return concatenate_audioclips([_tone(880.0, half, fps), _tone(1318.5, half, fps)])
 
 
-def _transition(duration: float, fps: int = FPS) -> AudioClip:
-    """`upgrade`'s weak->strong cut: a soft single tone, quieter than the
-    ding and with no rise/fall shape of its own — neither half of an
-    upgrade row is wrong or confirmed-right, just weaker or stronger, so the
-    sound marks a scene change rather than a verdict."""
-
-    def make_frame(t):
-        t_arr = np.atleast_1d(np.asarray(t, dtype=float))
-        envelope = np.sin(np.pi * np.clip(t_arr, 0, duration) / duration) ** 0.5
-        mono = 0.16 * np.sin(2 * np.pi * 520.0 * t_arr) * envelope
-        stereo = np.column_stack([mono, mono])
-        return stereo if np.ndim(t) else stereo[0]
-
-    return AudioClip(make_frame, duration=duration, fps=fps)
-
-
 def _sfx_clip(path: str, duration: float, synth, resources: List) -> AudioClip:
     """Prefers the recorded stinger at `path`, cut down to `duration` with a
     short fade-out so the trim doesn't click; falls back to the synthesized
@@ -194,8 +178,6 @@ class MoviePyNarrationComposer:
             return _sfx_clip(_BUZZER_FILE, self.timing.buzzer_duration, _buzzer, resources)
         if name == "ding":
             return _sfx_clip(_DING_FILE, self.timing.ding_duration, _ding, resources)
-        if name == "transition":
-            return _transition(self.timing.transition_duration)
         return None
 
     def _contrast_track(

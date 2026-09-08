@@ -70,9 +70,11 @@ class FormatSpec:
     contrast_rhythm: bool = False
 
     # Which stinger plays after each half — a name the audio composer looks
-    # up, not a sound the domain knows how to make. "" means silence instead:
-    # `upgrade`'s weak phrase isn't wrong, so it gets a soft transition
-    # rather than a buzz, and nothing plays before the reading pause at all.
+    # up, not a sound the domain knows how to make. "" means silence instead.
+    # `mistake` and `upgrade` both use "buzz"/"ding": the user chose one
+    # consistent audio signature across formats over signalling "weak" and
+    # "wrong" differently, even though the field stays per-format in case a
+    # future one genuinely needs its own sound.
     contrast_from_stinger: str = ""
     contrast_to_stinger: str = ""
 
@@ -123,7 +125,8 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         needs_paragraph=False,
         series_label="Đừng nói · nói",
         contrast_rhythm=True,
-        contrast_from_stinger="transition",
+        contrast_from_stinger="buzz",
+        contrast_to_stinger="ding",
         default_hook="Cách nói này nghe sang hơn hẳn",
     ),
 }
