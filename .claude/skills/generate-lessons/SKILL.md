@@ -199,8 +199,10 @@ used, so diacritics wrap and measure correctly with no extra work.
   really writes, not a bare phrase — `I very like it. — I really like it. — "very" không bổ nghĩa cho động từ`.
   The third column is Vietnamese.
 - **Đừng nói X, nói Y**: both sides must mean the same thing at different
-  bands — `very tired — exhausted — Band 5 → 7.5, cùng một ý`. Third column
-  Vietnamese.
+  bands — `very tired — exhausted — Band 5 -> 7.5, cùng một ý`. Third column
+  Vietnamese. Use the ASCII arrow `->`, not `→` — the rendered slide's body
+  font (Be Vietnam Pro) has no visible glyph for `→`, so it silently leaves a
+  gap in the note text instead of an arrow.
 
 ### The paragraph (Vocab Drill only)
 
