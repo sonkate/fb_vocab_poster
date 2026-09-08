@@ -75,6 +75,16 @@ by hand.
   dictates one. `mistake` and `upgrade` don't need a topic bank at all; their
   material is common Vietnamese-learner errors and weak→strong phrase pairs.
 
+### Filenames are always English, even for a Vietnamese topic
+
+A topic can display in Vietnamese anywhere it's content (frontmatter,
+on-screen text, captions), but the draft's slug — and everything derived
+from it, the `.md`, the narration audio, and the rendered `.mp4` — is always
+ASCII kebab-case. `domain/naming.py`'s `slugify()` transliterates accents
+(`công việc` → `cong-viec`, `đừng` → `dung`) rather than dropping them, so
+this happens automatically; you don't need to translate the topic yourself
+before calling `draft`.
+
 ### The taught-word ledger
 
 Two adapters sit behind `VocabularyLedger`, and the container reads **both**:
