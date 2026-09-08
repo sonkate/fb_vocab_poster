@@ -82,6 +82,7 @@ def parse(text: str, source: str = "<draft>") -> Lesson:
         # takes them off.
         paragraph=_section(body, PARAGRAPH),
         caption=_section(body, CAPTION),
+        hook=meta.get("hook", ""),
     )
 
 
@@ -99,6 +100,7 @@ def render(lesson: Lesson, avoid: Sequence[str] = ()) -> str:
         f"topic: {lesson.topic}",
         f"level: {lesson.level}",
         f"format: {lesson.format}",
+        f"hook: {lesson.hook}",
         "---",
         "",
         f"## {spec.section}",

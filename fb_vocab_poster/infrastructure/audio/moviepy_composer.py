@@ -15,6 +15,7 @@ from moviepy.editor import AudioFileClip, concatenate_audioclips
 
 from ...application.ports import DraftRef, Narration, SpeechSynthesizer, Workspace
 from ...domain import (
+    HOOK,
     OUTRO,
     PARAGRAPH,
     Lesson,
@@ -111,6 +112,16 @@ class MoviePyNarrationComposer:
         clips: List = []
         segments: List[NarrationSegment] = []
         resources: List = list(speech.values())
+
+        # The hook opens every format, spoken so it isn't lost on the muted
+        # majority — see generate-lessons SKILL.md's "first three seconds".
+        hook = speech[HOOK]
+        clips.extend([hook, _silence(self.timing.hook_pause)])
+        segments.append(
+            NarrationSegment(
+                kind=HOOK, duration=hook.duration + self.timing.hook_pause
+            )
+        )
 
         spec = lesson.spec
         if spec.contrast_rhythm:

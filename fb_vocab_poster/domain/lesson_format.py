@@ -24,6 +24,7 @@ MISTAKE = "mistake"
 UPGRADE = "upgrade"
 PARAGRAPH = "paragraph"
 OUTRO = "outro"
+HOOK = "hook"
 
 
 class LessonFormat(str, Enum):
@@ -67,6 +68,11 @@ class FormatSpec:
     # and `repeat_slowly` are unused for a format that sets this.
     contrast_rhythm: bool = False
 
+    # Plays as the opening hook slide when a draft leaves `hook:` blank in its
+    # frontmatter — every format needs one, since the hook slide now runs
+    # before all of them, not just this one's content.
+    default_hook: str = ""
+
     def series_caption(self, topic: str = "") -> str:
         """What the foot of a slide reads: the series, plus the topic of this
         particular episode when there is one."""
@@ -85,6 +91,7 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         repeat_slowly=True,
         needs_paragraph=True,
         series_label="5 từ mỗi ngày",
+        default_hook="Nói tiếng Anh nghe như người bản xứ",
     ),
     LessonFormat.MISTAKE: FormatSpec(
         section="Mistakes",
@@ -95,6 +102,7 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         needs_paragraph=False,
         series_label="Sai chỗ nào",
         contrast_rhythm=True,
+        default_hook="Bạn có đang mắc lỗi này không?",
     ),
     LessonFormat.UPGRADE: FormatSpec(
         section="Upgrades",
@@ -104,6 +112,7 @@ FORMATS: Dict[LessonFormat, FormatSpec] = {
         repeat_slowly=False,
         needs_paragraph=False,
         series_label="Đừng nói · nói",
+        default_hook="Cách nói này nghe sang hơn hẳn",
     ),
 }
 

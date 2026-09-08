@@ -11,6 +11,7 @@ from typing import List, Sequence, Tuple
 from PIL import Image, ImageDraw
 
 from ...domain import (
+    HOOK,
     MISTAKE,
     OUTRO,
     PARAGRAPH,
@@ -44,7 +45,9 @@ class PreparedSlides:
         return page_word_counts(self.paragraph_pages)
 
     def paint(self, request: SlideRequest, workdir: str, index: int) -> str:
-        if request.kind == OUTRO:
+        if request.kind == HOOK:
+            image = self._hook()
+        elif request.kind == OUTRO:
             image = self._outro()
         elif request.kind == WORD:
             image = self._word(request.vocab)
@@ -209,6 +212,38 @@ class PreparedSlides:
         text_utils.draw_centered(
             draw, [theme.outro_cta], cta_font, y, theme.accent, theme.width
         )
+        return image
+
+    def _fit_hook_font(self, draw, text: str):
+        """Largest size at or below `hook_size` that wraps the line onto no
+        more than three rows. Unlike `_fit_word_font` this is allowed to
+        wrap — a hook is a short sentence, not one hero word — just not
+        indefinitely, since it still has to read as one glance, not a
+        paragraph."""
+        theme = self.theme
+        size = theme.hook_size
+        while size > theme.hook_size_min:
+            font = theme.font(size, bold=True)
+            lines = text_utils.wrap_plain(draw, text, font, theme.max_width)
+            if len(lines) <= 3:
+                return font, lines
+            size -= 8
+        font = theme.font(theme.hook_size_min, bold=True)
+        return font, text_utils.wrap_plain(draw, text, font, theme.max_width)
+
+    def _hook(self) -> Image.Image:
+        """The opening slide, before any content and before the chrome that
+        marks every other slide: no wordmark, no chip, no footer, so nothing
+        competes with a claim big enough to read at thumbnail scale before a
+        scroll carries it past. Branding waits for the outro, which already
+        carries it — see generate-lessons SKILL.md's "first three seconds"."""
+        theme = self.theme
+        image, draw = self._canvas()
+
+        font, lines = self._fit_hook_font(draw, self.lesson.hook_line)
+        total = text_utils.block_height(lines, font)
+        top = theme.top + (theme.height - theme.top - theme.bottom - total) / 2
+        text_utils.draw_centered(draw, lines, font, top, theme.accent, theme.width)
         return image
 
     def _fit_word_font(self, draw, word: str):

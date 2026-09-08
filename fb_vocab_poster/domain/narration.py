@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
 from .lesson import Lesson, VocabEntry, strip_markup
-from .lesson_format import OUTRO, PARAGRAPH, WORD
+from .lesson_format import HOOK, OUTRO, PARAGRAPH, WORD
 
 
 @dataclass(frozen=True)
@@ -42,6 +42,10 @@ class NarrationTiming:
     outro_pause: float = 2.2
     pause_between_slow_fast: float = 0.5
     pause_after_word: float = 0.8
+
+    # The opening hook slide: whatever the hook line's own reading takes,
+    # plus a short beat before the first content slide cuts in.
+    hook_pause: float = 0.4
 
     # The contrast rhythm (`mistake` only): wrong sentence, buzz, right
     # sentence, ding, then a hold sized to the Vietnamese explanation so a
@@ -79,7 +83,7 @@ def build_audio_plan(lesson: Lesson) -> List[SpeechCue]:
     wrong the instant it's heard, so it teaches instead of misleading.
     """
     spec = lesson.spec
-    plan: List[SpeechCue] = []
+    plan: List[SpeechCue] = [SpeechCue(kind=HOOK, text=lesson.hook_line.strip())]
     for index, entry in enumerate(lesson.vocab):
         if spec.contrast_rhythm:
             wrong, right, _note = entry.columns

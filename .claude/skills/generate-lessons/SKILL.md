@@ -131,11 +131,12 @@ A draft looks like this (parsed by
 topic: <Topic>
 level: <LEVEL>
 format: vocab
+hook: <short Vietnamese line, or leave blank for the format's default>
 ---
 
 ## Vocabulary
 <!-- word — ipa — meaning -->
-- punctual — /ˈpʌŋktʃuəl/ — arriving on time, not late
+- punctual — /ˈpʌŋktʃuəl/ — đúng giờ, không đến trễ
 
 ## Paragraph
 A paragraph that uses **punctual** and every other word at least once.
@@ -144,9 +145,30 @@ A paragraph that uses **punctual** and every other word at least once.
 Vietnamese caption ending in a five-second question.
 ```
 
-Keep the frontmatter (`topic:`/`level:`/`format:`) unchanged, keep the
+Keep the frontmatter (`topic:`/`level:`/`format:`/`hook:`) unchanged, keep the
 `<!-- ... -->` column legend, and overwrite the draft in place at the path
 `draft` printed.
+
+### Language: English for what's taught, Vietnamese for what explains
+
+Followers are almost entirely Vietnamese learners, so the line is drawn by
+role, not by column position: **what the video is teaching stays English;
+what helps a viewer understand it is Vietnamese.**
+
+- **Stays English** — vocab words, IPA, the paragraph, and a `mistake` row's
+  wrong/corrected sentences. This is the target language; translating any of
+  it removes the lesson.
+- **Goes Vietnamese** — Vocab Drill's **meaning column**, `mistake`'s "why"
+  column, `upgrade`'s "when to use it" column, the hook line, and the caption.
+
+`infrastructure/content/anthropic_drafter.py`'s prompt already asks for a
+Vietnamese meaning, so an auto-drafted vocab lesson should already come back
+correct — check it rather than assuming, since this file used to say
+otherwise and a stale run of it could still produce an English one. The
+painter needs no special handling either way: the meaning column already
+renders through the same brand font (`theme.font`, Vietnamese-capable) and
+`wrap_plain` that the `mistake` format's Vietnamese "why" column has always
+used, so diacritics wrap and measure correctly with no extra work.
 
 ### Rows
 
@@ -156,8 +178,8 @@ Keep the frontmatter (`topic:`/`level:`/`format:`) unchanged, keep the
 - Every row must be pitched at the requested CEFR level. A1 means concrete,
   everyday, one- or two-syllable words; C1 means the word a band-7.5 candidate
   would actually reach for.
-- **Vocab Drill**: each word needs a real IPA transcription in `/slashes/` and a
-  short plain-English meaning (max ~12 words).
+- **Vocab Drill**: each word needs a real IPA transcription in `/slashes/` and
+  a short Vietnamese meaning (max ~12 words) — see the language rule above.
 - **Sai chỗ nào?**: each row is a full short sentence a Vietnamese learner
   really writes, not a bare phrase — `I very like it. — I really like it. — "very" không bổ nghĩa cho động từ`.
   The third column is Vietnamese.
@@ -206,15 +228,31 @@ Keep the frontmatter (`topic:`/`level:`/`format:`) unchanged, keep the
 
 ### The first three seconds
 
-Videos open straight on content — there is no title slide, and the brand card
-runs at the end. The first row is therefore the hook, so make it the strongest
-one. Opening lines that work:
+85–90% of feed views start muted, and ~75% of viewers should still be
+watching past 3 seconds (page benchmark was landing at ~25%) — a still frame
+with no promise on it reads as a photo, not a video, and gets scrolled past
+before the narration is ever heard. So every video now opens on a dedicated
+**hook slide**, before any content and before the brand card (which still
+runs at the end, unchanged): one bold Vietnamese line, 4–7 words, no wordmark
+or chip or footer competing with it, sized to read at thumbnail scale — and
+it is spoken aloud too, not left silent for the muted majority.
+
+Write it as `hook:` in the frontmatter — a curiosity gap or a bold claim, in
+the same voice as the caption. Leave it blank and the format's own generic
+default (`FormatSpec.default_hook`) plays instead, so a draft written before
+this existed, or one nobody bothered to customise, still opens on *something*
+rather than silently falling back to whatever the pipeline used to do. A
+custom one beats the default every time it's easy to write, since a line
+pulled from the actual lesson is a stronger promise than a generic one:
 
 - Lỗi sai — "Câu này sai. Bạn thấy sai chỗ nào không?"
 - Đối lập band — "Đây là cách nói band 5. Còn đây là band 7.5."
 - Gọi đúng tên — "Người Việt học tiếng Anh gần như ai cũng đọc sai từ này."
 - Đếm ngược — "5 từ để nói về phỏng vấn xin việc. Từ số 4 là từ giám khảo thích nhất."
 - Phủ định — "Đừng nói 'very good' trong phòng thi nữa."
+
+The first content row still matters — it is what plays right after the hook,
+not a beat to coast on — so keep making it the strongest row regardless.
 
 ## Step 4: Build, then verify the artefact
 
@@ -230,16 +268,18 @@ ffprobe -v error -show_entries format=duration \
   -of default=noprint_wrappers=1 "<mp4 path>"
 ```
 
-- **Resolution must be 1080×1350** (4:5). These go out as ordinary Facebook
-  **feed posts, not Reels** — the publisher posts to `/{page_id}/videos`, not
-  `/video_reels` — and 4:5 is the tallest shape a feed post fills without
-  cropping. The handbook's "Reels get 3–4× the reach" line compares Reels
-  against *photo and link posts*; it says nothing about 9:16 video versus 4:5
-  video, so it is not a reason to go taller. If it isn't 1080×1350, stop and
-  report — don't patch the renderer from inside this workflow.
+- **Resolution must be 1080×1920** (9:16). These still go out as ordinary
+  Facebook **feed posts, not Reels** — the publisher posts to
+  `/{page_id}/videos`, not `/video_reels` — but as of September 2026 the user
+  chose the taller canvas anyway (`container.py`'s `theme` property pins
+  `REEL_HEIGHT`); this is a deliberate override of the earlier 4:5 default,
+  not a bug. If it isn't 1080×1920, stop and report — don't patch the
+  renderer from inside this workflow.
 - **Duration should land in 25–45 seconds.** If it doesn't, say so plainly
   rather than gutting the content to hit the number.
 - Both a video and an audio stream must be present.
+- The video should open on the hook slide (see above), not straight on the
+  first content row.
 
 Only run `publish` instead of `build` if the user **explicitly** asked to post
 to Facebook. `publish` renders **and** posts live to the configured Page —
@@ -268,5 +308,9 @@ Fix these in the draft file; don't work around them in the pipeline.
   is too long for A1/A2 inside a 45-second video.
 - It asks for **3–5 hashtags**; settle on **4** (3 fixed + 1 topical).
 - It doesn't specify the caption's language; the caption must be **Vietnamese**.
+- This file itself used to say Vocab Drill's meaning column was "plain-English" —
+  it isn't, and never should be; that was the drift, not the code. The
+  drafter's prompt already asks for Vietnamese. Fixed here in September 2026;
+  noted in case an old cached copy of this file is ever consulted instead.
 - Formats `pronunciation` and `cuecard` appear in the handbook's frontmatter
   example but are **not implemented** — `LessonFormat.parse` rejects them.

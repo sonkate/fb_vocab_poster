@@ -29,6 +29,7 @@ _SCALED_FIELDS: Sequence[str] = (
     "meaning_inset", "rule_half_width", "rule_thickness",
     "outro_mark_size", "outro_detail_size", "outro_cta_size", "outro_cta_gap",
     "badge_size", "badge_padding_x", "badge_padding_y", "badge_radius", "badge_gap",
+    "hook_size", "hook_size_min",
 )
 
 ASSETS_DIR = os.path.join(
@@ -163,6 +164,16 @@ class Theme:
     badge_padding_y: int = 10
     badge_radius: int = 18
     badge_gap: int = 36
+
+    # The opening hook slide wears no chrome, so it's the one slide free to
+    # go bigger than `word_size` — it has the whole canvas to itself and
+    # needs to read at thumbnail scale before a scroll carries it past.
+    # `hook_size_min` sits low enough that a real 6-7 word Vietnamese hook
+    # (the `default_hook` strings in lesson_format.py) can still shrink into
+    # `_fit_hook_font`'s 3-line cap — at 110 it floored out one step short
+    # and those exact strings landed on 4 lines instead.
+    hook_size: int = 200
+    hook_size_min: int = 90
 
     # The wordmark is two-toned — the tail carries the accent colour, and that
     # single repeated detail is what makes the page recognisable in a feed.

@@ -59,10 +59,17 @@ class Lesson:
     paragraph: str = ""
     caption: str = ""
     format: LessonFormat = LessonFormat.VOCAB
+    hook: str = ""
 
     @property
     def spec(self):
         return FORMATS[self.format]
+
+    @property
+    def hook_line(self) -> str:
+        """The opening slide's line: the draft's own, or the format's generic
+        fallback so a draft that never set one still opens on something."""
+        return self.hook.strip() or self.spec.default_hook
 
     def ensure_publishable(self) -> None:
         """Raises unless the lesson has everything its format needs."""

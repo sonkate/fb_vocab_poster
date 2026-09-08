@@ -65,7 +65,7 @@ def test_a_contrast_format_narrates_both_the_wrong_and_the_right_sentence():
     """`mistake` reads the wrong sentence too — a buzzer and an on-screen SAI
     tag mark it as wrong the instant it's heard, so reading it aloud teaches
     rather than misleads. There is still no paragraph to read."""
-    plan = build_audio_plan(mistake_lesson())
+    plan = build_audio_plan(mistake_lesson())[1:]   # [0] is the hook
 
     assert [cue.text for cue in plan] == ["I very like it.", "I really like it."]
     assert [cue.role for cue in plan] == ["wrong", "right"]

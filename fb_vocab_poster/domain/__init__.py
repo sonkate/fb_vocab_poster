@@ -13,6 +13,7 @@ from .errors import (
 from .lesson import Fragment, Lesson, VocabEntry, fragments_of, strip_markup, to_entries
 from .lesson_format import (
     FORMATS,
+    HOOK,
     MISTAKE,
     OUTRO,
     PARAGRAPH,
@@ -42,6 +43,7 @@ __all__ = [
     "FormatSpec",
     "Fragment",
     "fragments_of",
+    "HOOK",
     "IncompleteLessonError",
     "InvalidLessonFile",
     "InvalidLevelError",

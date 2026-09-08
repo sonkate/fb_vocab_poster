@@ -72,3 +72,16 @@ def test_post_text_falls_back_to_the_paragraph_when_no_caption_was_written():
 def test_a_lesson_missing_its_paragraph_and_vocab_cannot_be_published():
     with pytest.raises(IncompleteLessonError, match="Paragraph and Vocabulary"):
         Lesson(topic="School", level=CEFRLevel.B1).ensure_publishable()
+
+
+def test_a_lessons_own_hook_line_wins_over_the_formats_default():
+    lesson = Lesson(topic="School", level=CEFRLevel.B1, hook="5 lỗi ai cũng mắc")
+
+    assert lesson.hook_line == "5 lỗi ai cũng mắc"
+
+
+def test_a_blank_hook_falls_back_to_the_formats_default():
+    lesson = Lesson(topic="School", level=CEFRLevel.B1, hook="   ")
+
+    assert lesson.hook_line == lesson.spec.default_hook
+    assert lesson.hook_line
