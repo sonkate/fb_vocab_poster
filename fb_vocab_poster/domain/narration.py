@@ -73,6 +73,12 @@ class NarrationSegment:
     duration: float
     vocab: Optional[VocabEntry] = None
     stage: str = "full"   # "wrong" or "full" — only meaningful for a contrast-rhythm row split into two slides
+    # Silence the adapter measured at either end of the underlying clip —
+    # only the HOOK segment sets these (see `build_slide_plan`'s fan-out);
+    # every other kind keeps the default, which is "the whole segment is
+    # voiced", i.e. today's behaviour.
+    lead_in: float = 0.0
+    trail_out: float = 0.0
 
 
 def build_audio_plan(lesson: Lesson) -> List[SpeechCue]:

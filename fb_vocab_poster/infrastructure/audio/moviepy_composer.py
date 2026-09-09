@@ -5,9 +5,12 @@ Implements `application.ports.NarrationComposer`. What gets spoken is decided by
 because real durations are the one thing the domain cannot know in advance.
 """
 import os
+import re
+import subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
+import imageio_ffmpeg
 import numpy as np
 from moviepy.audio.AudioClip import AudioClip
 from moviepy.audio.fx.audio_fadeout import audio_fadeout
@@ -39,6 +42,40 @@ _SOUND_DIR = os.path.join(
 )
 _BUZZER_FILE = os.path.join(_SOUND_DIR, "wrong.mp3")
 _DING_FILE = os.path.join(_SOUND_DIR, "correct.mp3")
+
+
+def _voice_span(path: str, duration: float, noise_db: float = -35.0, min_silence: float = 0.08) -> Tuple[float, float]:
+    """Where the voice actually sits inside a synthesized clip, trimming
+    whatever silence the TTS engine padded onto either end. Shells out to
+    ffmpeg's own `silencedetect` filter (the same binary moviepy already
+    depends on via `imageio_ffmpeg`, so this adds no new dependency) rather
+    than re-implementing amplitude analysis — see `build_slide_plan`'s hook
+    fan-out for why the video layer needs this span rather than the clip's
+    raw duration."""
+    result = subprocess.run(
+        [
+            imageio_ffmpeg.get_ffmpeg_exe(), "-i", path,
+            "-af", f"silencedetect=noise={noise_db}dB:d={min_silence}",
+            "-f", "null", "-",
+        ],
+        capture_output=True, text=True,
+    )
+    starts = [float(m) for m in re.findall(r"silence_start: ([\d.]+)", result.stderr)]
+    ends = [float(m) for m in re.findall(r"silence_end: ([\d.]+)", result.stderr)]
+
+    voice_start = 0.0
+    if starts and starts[0] < 0.05:
+        voice_start = ends[0] if ends else duration
+        starts, ends = starts[1:], ends[1:]
+
+    voice_end = duration
+    if len(starts) > len(ends):
+        # Silence runs all the way to EOF with no closing `silence_end`.
+        voice_end = starts[-1]
+    elif starts and ends[-1] > duration - 0.15:
+        voice_end = starts[-1]
+
+    return voice_start, max(voice_end, voice_start)
 
 
 def _silence(duration: float, fps: int = FPS) -> AudioClip:
@@ -116,10 +153,17 @@ class MoviePyNarrationComposer:
         # The hook opens every format, spoken so it isn't lost on the muted
         # majority — see generate-lessons SKILL.md's "first three seconds".
         hook = speech[HOOK]
+        voice_start, voice_end = _voice_span(hook.filename, hook.duration)
         clips.extend([hook, _silence(self.timing.hook_pause)])
         segments.append(
             NarrationSegment(
-                kind=HOOK, duration=hook.duration + self.timing.hook_pause
+                kind=HOOK,
+                duration=hook.duration + self.timing.hook_pause,
+                lead_in=voice_start,
+                # The clip's own trailing silence, plus our added pause —
+                # both are dead air the pill shouldn't sweep across, so both
+                # get folded into holding the last word instead.
+                trail_out=(hook.duration - voice_end) + self.timing.hook_pause,
             )
         )
 

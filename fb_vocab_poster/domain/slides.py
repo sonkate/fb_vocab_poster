@@ -55,20 +55,27 @@ def build_slide_plan(
     count, so a page with more to read holds the screen longer than one with
     less — not for an equal, word-count-blind share.
 
-    The hook segment fans out the same way, one slide per word: a longer word
-    takes longer to say, so it holds the screen in proportion to its own
-    character count rather than getting the same slice as a short one. Every
-    word after the first continues the same reveal instead of fading in on
-    its own — see `SlideRequest.fade_in`. `hook_line` is only needed to know
-    where the words split; leaving it blank (any caller that predates this
-    fan-out) keeps a hook segment as the single, unhighlighted slide it
-    always was.
+    The hook segment fans out the same way, one slide per word — but split
+    evenly by word count, not character count: the hook is always Vietnamese,
+    and Vietnamese syllables ("tiếng") read at roughly the same pace no
+    matter how many letters spell one, so a character-weighted split let a
+    short quoted loanword like "'vibe'" (six characters, one syllable) claim
+    as much of the pill's timeline as two full "tiếng" — badly out of step
+    with the real recording. `segment.lead_in`/`trail_out` trim the fan-out to
+    the span the adapter actually measured the voice occupying inside the
+    clip, so the pill doesn't spend time sweeping across silence the TTS
+    engine padded onto either end (or the breathing pause we add after it) —
+    a leading silence becomes its own resting slide (no pill yet), and a
+    trailing one is folded into holding the last word instead of a separate
+    state. Every word after the first continues the same reveal instead of
+    fading in on its own — see `SlideRequest.fade_in`. `hook_line` is only
+    needed to know where the words split; leaving it blank (any caller that
+    predates this fan-out) keeps a hook segment as the single, unhighlighted
+    slide it always was.
     """
     weights = list(paragraph_page_weights) or [1]
     total_weight = sum(weights)
     hook_words = hook_line.split()
-    hook_weights = [len(word) for word in hook_words] or [1]
-    hook_total_weight = sum(hook_weights)
     plan: List[SlideRequest] = []
 
     for segment in segments:
@@ -83,15 +90,23 @@ def build_slide_plan(
                 for page, weight in enumerate(weights)
             )
         elif segment.kind == HOOK and hook_words:
+            voice_span = max(segment.duration - segment.lead_in - segment.trail_out, 0.001)
+            per_word = voice_span / len(hook_words)
+            if segment.lead_in > 0:
+                plan.append(
+                    SlideRequest(
+                        kind=HOOK, duration=segment.lead_in, page=-1, page_count=len(hook_words)
+                    )
+                )
             plan.extend(
                 SlideRequest(
                     kind=HOOK,
-                    duration=segment.duration * weight / hook_total_weight,
+                    duration=per_word + (segment.trail_out if word_index == len(hook_words) - 1 else 0),
                     page=word_index,
                     page_count=len(hook_words),
-                    fade_in=(word_index == 0),
+                    fade_in=(word_index == 0 and segment.lead_in <= 0),
                 )
-                for word_index, weight in enumerate(hook_weights)
+                for word_index in range(len(hook_words))
             )
         else:
             # A segment's kind is already the layout its format asked for, so

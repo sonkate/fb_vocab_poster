@@ -101,15 +101,46 @@ def test_a_hook_segment_fans_out_one_slide_per_word_when_a_hook_line_is_given():
     assert [slide.page_count for slide in plan] == [6] * 6
 
 
-def test_a_hook_word_holds_the_screen_in_proportion_to_its_own_length():
-    """A longer word takes longer to say — splitting the cue's duration
-    evenly across words would drift the highlight away from the audio by
-    the end of the sentence, the same bug paragraph pages already avoid."""
-    timeline = (NarrationSegment(kind="hook", duration=10.0),)
+def test_a_hook_word_holds_the_screen_for_an_even_share_regardless_of_length():
+    """The hook is always Vietnamese, spoken one syllable ("tiếng") per
+    space-separated word, and syllables take about the same time to say no
+    matter how many letters spell them. Splitting by character count instead
+    (the bug this fixes) let a short quoted loanword like "'vibe'" claim as
+    much of the pill's timeline as two full syllables — badly out of step
+    with the real recording."""
+    timeline = (NarrationSegment(kind="hook", duration=9.0),)
 
     plan = build_slide_plan(timeline, hook_line="a bb cccc")
 
-    assert [slide.duration for slide in plan] == pytest.approx([10 / 7, 20 / 7, 40 / 7])
+    assert [slide.duration for slide in plan] == pytest.approx([3.0, 3.0, 3.0])
+
+
+def test_a_hook_segments_lead_in_becomes_its_own_resting_slide():
+    """`lead_in` is silence the adapter measured before the voice actually
+    starts — the pill has nothing to sweep across yet, so that stretch gets
+    its own unhighlighted slide (`page=-1`) instead of starting the sweep
+    before anyone is speaking."""
+    timeline = (NarrationSegment(kind="hook", duration=4.0, lead_in=1.0),)
+
+    plan = build_slide_plan(timeline, hook_line="one two")
+
+    assert [slide.page for slide in plan] == [-1, 0, 1]
+    assert plan[0].duration == pytest.approx(1.0)
+    assert plan[0].fade_in is True
+    assert [slide.fade_in for slide in plan[1:]] == [False, False]
+    assert sum(slide.duration for slide in plan[1:]) == pytest.approx(3.0)
+
+
+def test_a_hook_segments_trail_out_is_folded_into_holding_the_last_word():
+    """`trail_out` is dead air after the voice finishes — the clip's own
+    trailing silence plus the breathing pause after it. The sweep has
+    already caught up with the sentence by then, so it just holds the last
+    word rather than adding a separate state nothing asked for."""
+    timeline = (NarrationSegment(kind="hook", duration=5.0, trail_out=2.0),)
+
+    plan = build_slide_plan(timeline, hook_line="one two")
+
+    assert [slide.duration for slide in plan] == pytest.approx([1.5, 3.5])
 
 
 def test_only_the_first_hook_word_fades_in_the_rest_continue_the_reveal():
