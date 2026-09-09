@@ -3,6 +3,7 @@
 Implements `application.ports.VideoRenderer`. Slide durations come straight from
 `domain.build_slide_plan`, so picture and sound cannot drift apart.
 """
+import os
 from dataclasses import dataclass, field
 from typing import List
 
@@ -56,17 +57,29 @@ class MoviePyVideoRenderer:
         video = CompositeVideoClip([video, self._progress_bar(video.duration)])
         audio = AudioFileClip(narration.audio_path)
         video = video.set_audio(audio).set_fps(self.fps)
+        # Encode to a sibling temp path and rename into place only once it's
+        # whole: `write_videofile` isn't atomic, so a render that dies partway
+        # (an interrupted process, an upstream TTS failure further up the
+        # call stack on a *different* run) used to leave a truncated,
+        # unplayable MP4 sitting at `out_path` — clobbering whatever finished
+        # video a viewer already had open there.
+        tmp_path = f"{out_path}.tmp"
         try:
             video.write_videofile(
-                out_path,
+                tmp_path,
                 codec="libx264",
                 audio_codec="aac",
                 verbose=False,
                 logger=None,
             )
+        except Exception:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise
         finally:
             video.close()
             audio.close()
+        os.replace(tmp_path, out_path)
         return out_path
 
     def _progress_bar(self, duration: float) -> VideoClip:
