@@ -302,6 +302,25 @@ ffprobe -v error -show_entries format=duration \
 - The video should open on the hook slide (see above), not straight on the
   first content row.
 
+### If `build` fails with a TiengDong TTS error
+
+`TiengDongSpeechSynthesizer` (see its own docstring) is an unofficial,
+fragile integration. Two distinct failures showed up in practice:
+
+- **A specific phrase silently breaks conversion.** The exact sentence
+  "I've been feeling down since morning." (and "...since noon.") failed
+  every single retry, while removing "since ___" or removing "feeling"
+  from the same sentence converted fine. This looks like an undocumented,
+  opaque filter in the service rather than anything wrong with the draft's
+  grammar — if a cue's text fails deterministically (same error on every
+  retry, not just once), don't keep retrying the build; isolate the exact
+  cue with a small script calling `TiengDongSpeechSynthesizer.synthesize`
+  directly on candidate rewordings, and swap in the first one that
+  converts, keeping the lesson's teaching point intact.
+- **A transient empty `atts_audio_url`.** Some failures are just the
+  service being flaky — the same text succeeds on a plain retry. Try the
+  build again once or twice before assuming the text itself is the problem.
+
 Only run `publish` instead of `build` if the user **explicitly** asked to post
 to Facebook. `publish` renders **and** posts live to the configured Page —
 treat it as an outward-facing action to confirm first.
