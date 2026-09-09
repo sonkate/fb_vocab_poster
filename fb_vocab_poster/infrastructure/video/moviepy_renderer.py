@@ -63,7 +63,11 @@ class MoviePyVideoRenderer:
         # call stack on a *different* run) used to leave a truncated,
         # unplayable MP4 sitting at `out_path` — clobbering whatever finished
         # video a viewer already had open there.
-        tmp_path = f"{out_path}.tmp"
+        # ffmpeg picks its muxer from the filename's own extension, so the
+        # temp name has to end in `.mp4` too — `<name>.mp4.tmp` made it fail
+        # outright with "Unable to choose an output format".
+        root, ext = os.path.splitext(out_path)
+        tmp_path = f"{root}.tmp{ext}"
         try:
             video.write_videofile(
                 tmp_path,
