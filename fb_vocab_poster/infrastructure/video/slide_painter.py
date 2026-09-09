@@ -250,13 +250,16 @@ class PreparedSlides:
         scroll carries it past. Branding waits for the outro, which already
         carries it — see generate-lessons SKILL.md's "first three seconds".
 
-        Word-by-word reveal: a negative `highlight_index` (the default) draws
-        every word, none of them boxed — the fallback a blank hook or a
-        caller that skips the fan-out in `build_slide_plan` needs. Any other
-        value draws only the words up to and including that one, with that
-        word sitting on an accent pill — the word the narration is on right
-        now — so the sentence builds up instead of sitting there as one
-        static frame for however long the hook takes to read.
+        The full line is always on screen — a viewer skimming past in a
+        silent feed reads the whole claim in one glance, which a build-up
+        would make them wait for. A negative `highlight_index` (the
+        default) is the resting state that draws: every word plain, none
+        boxed — the fallback a blank hook or a caller that skips the
+        fan-out in `build_slide_plan` needs. Any other value sweeps a gold
+        pill onto that one word — the word the single, whole-sentence
+        narration is on right now — dimming the words still ahead of it so
+        the eye can see where the pill is heading, without ever hiding
+        the sentence itself.
         """
         theme = self.theme
         image, draw = self._canvas()
@@ -268,11 +271,9 @@ class PreparedSlides:
         total = text_utils.block_height(lines, font)
         top = theme.top + (theme.height - theme.top - theme.bottom - total) / 2
 
-        visible_through = len(words) - 1 if highlight_index < 0 else highlight_index
-        text_utils.draw_centered_reveal(
-            draw, lines, font, top, theme.accent, theme.width,
-            visible_through=visible_through,
-            highlight_index=None if highlight_index < 0 else highlight_index,
+        text_utils.draw_centered_pill(
+            draw, lines, font, top, theme.accent, theme.accent_soft, theme.width,
+            highlight_index=highlight_index,
             pill_color=theme.accent,
             pill_text_color=theme.level_text,
             pill_padding_x=font.size * 0.18,

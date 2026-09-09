@@ -1,7 +1,7 @@
 """The opening hook slide: no chrome (that's the whole point — nothing should
-compete with the claim), text big enough to actually be there, and — since
-the word-by-word reveal — only as much of the sentence as has been "read" so
-far, with the current word boxed."""
+compete with the claim), text big enough to actually be there, and the full
+sentence on screen from frame one — a gold pill sweeps across it in reading
+order, dimming words not yet reached, but never hides any of them."""
 from PIL import ImageDraw
 
 from fb_vocab_poster.domain import CEFRLevel, Fragment, Lesson
@@ -67,13 +67,35 @@ def test_a_real_hook_line_shrinks_to_keep_within_two_lines():
         assert width < THEME.width - 2 * THEME.left
 
 
-def test_the_reveal_only_draws_words_up_to_the_highlighted_one():
-    """`highlight_index=0` is the very first frame of the reveal: only the
-    first word exists yet, the rest of the sentence hasn't "appeared"."""
-    full = _prepared("5 lỗi ai cũng mắc")._hook(-1)
-    first_word_only = _prepared("5 lỗi ai cũng mắc")._hook(0)
+def test_a_word_not_yet_reached_is_dimmed_not_hidden():
+    """`highlight_index=0` is the very first frame of the sweep: the pill
+    sits on the first word, but the rest of the sentence is already on
+    screen — dimmed, not missing — so a muted scroller reads the whole
+    claim before the pill ever gets there."""
+    image = _prepared("5 lỗi ai cũng mắc")._hook(0)
 
-    assert _count_color(first_word_only, THEME.accent) < _count_color(full, THEME.accent)
+    assert _count_color(image, THEME.accent_soft) > 0
+
+
+def test_a_word_already_passed_settles_back_to_the_plain_reading_color():
+    hook = "5 lỗi ai cũng mắc"
+    last_index = len(hook.split()) - 1
+
+    image = _prepared(hook)._hook(last_index)
+
+    assert _count_color(image, THEME.accent) > 0
+
+
+def test_the_resting_state_has_no_pill_and_barely_any_dimming():
+    """A negative `highlight_index` — a blank hook, or a caller outside the
+    word-by-word fan-out — is the plain sentence with no sweep at all: no
+    pill text colour, and only the odd anti-aliased edge pixel landing on
+    the exact `accent_soft` blend by chance, nothing like a dimmed word."""
+    resting = _prepared("5 lỗi ai cũng mắc")._hook(-1)
+    dimmed = _prepared("5 lỗi ai cũng mắc")._hook(0)
+
+    assert _count_color(resting, THEME.accent_soft) < _count_color(dimmed, THEME.accent_soft) / 100
+    assert _count_color(resting, THEME.level_text) == 0
 
 
 def test_the_highlighted_word_sits_on_an_accent_pill_with_flipped_text():

@@ -165,14 +165,14 @@ def draw_centered_tokens(
     return y
 
 
-def draw_centered_reveal(
+def draw_centered_pill(
     draw,
     lines: Sequence[Sequence[Fragment]],
     font,
     top: float,
     color,
+    dim_color,
     canvas_width: int,
-    visible_through: int,
     highlight_index: Optional[int],
     pill_color,
     pill_text_color,
@@ -180,45 +180,52 @@ def draw_centered_reveal(
     pill_padding_y: float,
     pill_radius: float,
 ) -> float:
-    """A word-by-word reveal caption: only fragments up to the
-    `visible_through`-th word (counting across every line) are drawn at
-    all — a word not reached yet is skipped rather than dimmed, so nothing
-    leaks ahead of the narration — and the `highlight_index`-th word sits on
-    a filled, rounded pill in `pill_color` with its own text flipped to
-    `pill_text_color` so it stays legible on the fill. Each line re-centres
-    on whichever of its own words are visible so far, so a line grows from
-    the middle outward exactly like the reveal it's showing; only `top`
-    (sized from the caller's full, final wrap) holds still across every
-    state of one reveal, so the block doesn't jump vertically as it fills."""
+    """A caption whose full line is on screen from the very first frame —
+    a viewer skimming a silent, scrolling feed reads the whole sentence at
+    a glance rather than waiting for it to build up. A gold pill instead
+    sweeps across the words in reading order: the word under the pill gets
+    `pill_text_color` so it reads against the fill, words already behind
+    the pill stay in plain `color`, and words not yet reached sit in
+    `dim_color` so the eye still knows where the pill is heading next.
+    `highlight_index` negative (or `None`) skips the pill entirely and
+    draws every word in plain `color` — the resting state a blank hook or
+    a caller outside the word-by-word fan-out needs."""
     leading = line_height(font)
     y = top
     index = 0
     for line in lines:
-        visible = list(line[: max(0, visible_through - index + 1)])
-        width = _line_width(draw, visible, font, font)
+        width = _line_width(draw, line, font, font)
         x = (canvas_width - width) / 2
+        sweeping = highlight_index is not None and highlight_index >= 0
+
+        if sweeping:
+            cursor = x
+            for local_i, fragment in enumerate(line):
+                if local_i and fragment.starts_word:
+                    cursor += draw.textlength(" ", font=font)
+                w = draw.textlength(fragment.text, font=font)
+                if index + local_i == highlight_index:
+                    draw.rounded_rectangle(
+                        [
+                            (cursor - pill_padding_x, y - pill_padding_y),
+                            (cursor + w + pill_padding_x, y + font.size + pill_padding_y),
+                        ],
+                        radius=pill_radius,
+                        fill=pill_color,
+                    )
+                cursor += w
 
         cursor = x
-        for local_i, fragment in enumerate(visible):
+        for local_i, fragment in enumerate(line):
             if local_i and fragment.starts_word:
                 cursor += draw.textlength(" ", font=font)
-            w = draw.textlength(fragment.text, font=font)
-            if index + local_i == highlight_index:
-                draw.rounded_rectangle(
-                    [
-                        (cursor - pill_padding_x, y - pill_padding_y),
-                        (cursor + w + pill_padding_x, y + font.size + pill_padding_y),
-                    ],
-                    radius=pill_radius,
-                    fill=pill_color,
-                )
-            cursor += w
-
-        cursor = x
-        for local_i, fragment in enumerate(visible):
-            if local_i and fragment.starts_word:
-                cursor += draw.textlength(" ", font=font)
-            fill = pill_text_color if index + local_i == highlight_index else color
+            position = index + local_i
+            if not sweeping or position < highlight_index:
+                fill = color
+            elif position == highlight_index:
+                fill = pill_text_color
+            else:
+                fill = dim_color
             draw.text((cursor, y), fragment.text, font=font, fill=fill)
             cursor += draw.textlength(fragment.text, font=font)
 
