@@ -46,7 +46,12 @@ class PreparedSlides:
 
     def paint(self, request: SlideRequest, workdir: str, index: int) -> str:
         if request.kind == HOOK:
-            image = self._hook()
+            # `page_count > 1` means `build_slide_plan` fanned the hook out
+            # into one slide per word; `page` is which one is current. A
+            # blank hook (or any caller that skips the fan-out) leaves
+            # `page_count` at its default 1, so -1 draws the whole line
+            # with nothing hidden or highlighted.
+            image = self._hook(request.page if request.page_count > 1 else -1)
         elif request.kind == OUTRO:
             image = self._outro()
         elif request.kind == WORD:
@@ -218,36 +223,62 @@ class PreparedSlides:
         )
         return image
 
-    def _fit_hook_font(self, draw, text: str):
-        """Largest size at or below `hook_size` that wraps the line onto no
-        more than three rows. Unlike `_fit_word_font` this is allowed to
-        wrap — a hook is a short sentence, not one hero word — just not
-        indefinitely, since it still has to read as one glance, not a
-        paragraph."""
+    def _fit_hook_font(self, draw, fragments: List[Fragment]):
+        """Largest size at or below `hook_size` that wraps the words onto no
+        more than two rows. Unlike `_fit_word_font` this is allowed to wrap
+        — a hook is a short sentence, not one hero word — just not
+        indefinitely tall, since it still has to read as one glance, not a
+        paragraph. Wraps `Fragment`s rather than a plain string so the same
+        line breaks serve the word-by-word reveal in `_hook` below; none of
+        `fragments` needs to be flagged highlighted here, since line breaks
+        depend only on each word's own width."""
         theme = self.theme
         size = theme.hook_size
         while size > theme.hook_size_min:
             font = theme.font(size, bold=True)
-            lines = text_utils.wrap_plain(draw, text, font, theme.max_width)
-            if len(lines) <= 3:
+            lines = text_utils.wrap_tokens(draw, fragments, font, theme.max_width)
+            if len(lines) <= 2:
                 return font, lines
             size -= 8
         font = theme.font(theme.hook_size_min, bold=True)
-        return font, text_utils.wrap_plain(draw, text, font, theme.max_width)
+        return font, text_utils.wrap_tokens(draw, fragments, font, theme.max_width)
 
-    def _hook(self) -> Image.Image:
+    def _hook(self, highlight_index: int = -1) -> Image.Image:
         """The opening slide, before any content and before the chrome that
         marks every other slide: no wordmark, no chip, no footer, so nothing
         competes with a claim big enough to read at thumbnail scale before a
         scroll carries it past. Branding waits for the outro, which already
-        carries it — see generate-lessons SKILL.md's "first three seconds"."""
+        carries it — see generate-lessons SKILL.md's "first three seconds".
+
+        Word-by-word reveal: a negative `highlight_index` (the default) draws
+        every word, none of them boxed — the fallback a blank hook or a
+        caller that skips the fan-out in `build_slide_plan` needs. Any other
+        value draws only the words up to and including that one, with that
+        word sitting on an accent pill — the word the narration is on right
+        now — so the sentence builds up instead of sitting there as one
+        static frame for however long the hook takes to read.
+        """
         theme = self.theme
         image, draw = self._canvas()
 
-        font, lines = self._fit_hook_font(draw, self.lesson.hook_line)
+        words = self.lesson.hook_line.split() or [self.lesson.hook_line]
+        fragments = [Fragment(word) for word in words]
+        font, lines = self._fit_hook_font(draw, fragments)
+
         total = text_utils.block_height(lines, font)
         top = theme.top + (theme.height - theme.top - theme.bottom - total) / 2
-        text_utils.draw_centered(draw, lines, font, top, theme.accent, theme.width)
+
+        visible_through = len(words) - 1 if highlight_index < 0 else highlight_index
+        text_utils.draw_centered_reveal(
+            draw, lines, font, top, theme.accent, theme.width,
+            visible_through=visible_through,
+            highlight_index=None if highlight_index < 0 else highlight_index,
+            pill_color=theme.accent,
+            pill_text_color=theme.level_text,
+            pill_padding_x=font.size * 0.18,
+            pill_padding_y=font.size * 0.14,
+            pill_radius=font.size * 0.18,
+        )
         return image
 
     def _fit_word_font(self, draw, word: str):

@@ -166,15 +166,16 @@ class Theme:
     badge_radius: int = 18
     badge_gap: int = 36
 
-    # The opening hook slide wears no chrome, so it's the one slide free to
-    # go bigger than `word_size` — it has the whole canvas to itself and
-    # needs to read at thumbnail scale before a scroll carries it past.
-    # `hook_size_min` sits low enough that a real 6-7 word Vietnamese hook
-    # (the `default_hook` strings in lesson_format.py) can still shrink into
-    # `_fit_hook_font`'s 3-line cap — at 110 it floored out one step short
-    # and those exact strings landed on 4 lines instead.
-    hook_size: int = 200
-    hook_size_min: int = 90
+    # The opening hook slide wears no chrome, so nothing else on screen
+    # competes with it — but at full size a real 6-7 word Vietnamese hook
+    # crowded the frame with no room to breathe. `_fit_hook_font` shrinks
+    # from `hook_size` down towards `hook_size_min` until the line wraps
+    # onto no more than two rows; these two values were picked by measuring
+    # the `default_hook` strings in lesson_format.py (plus real drafts'
+    # `hook:` lines) against that two-line cap so every one of them lands
+    # with real margin on both sides, not just under `max_width`.
+    hook_size: int = 130
+    hook_size_min: int = 60
 
     # A thin bar along the very bottom edge, filling left to right over the
     # whole video's runtime. It is the one thing on screen that never stops

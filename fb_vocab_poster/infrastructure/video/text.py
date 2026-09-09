@@ -1,5 +1,5 @@
 """Text measurement and wrapping helpers, shared by every slide layout."""
-from typing import Iterable, List, Sequence
+from typing import Iterable, List, Optional, Sequence
 
 from ...domain.lesson import Fragment
 
@@ -161,6 +161,68 @@ def draw_centered_tokens(
                     width=max(2, f.size // 18),
                 )
             x += width
+        y += leading
+    return y
+
+
+def draw_centered_reveal(
+    draw,
+    lines: Sequence[Sequence[Fragment]],
+    font,
+    top: float,
+    color,
+    canvas_width: int,
+    visible_through: int,
+    highlight_index: Optional[int],
+    pill_color,
+    pill_text_color,
+    pill_padding_x: float,
+    pill_padding_y: float,
+    pill_radius: float,
+) -> float:
+    """A word-by-word reveal caption: only fragments up to the
+    `visible_through`-th word (counting across every line) are drawn at
+    all — a word not reached yet is skipped rather than dimmed, so nothing
+    leaks ahead of the narration — and the `highlight_index`-th word sits on
+    a filled, rounded pill in `pill_color` with its own text flipped to
+    `pill_text_color` so it stays legible on the fill. Each line re-centres
+    on whichever of its own words are visible so far, so a line grows from
+    the middle outward exactly like the reveal it's showing; only `top`
+    (sized from the caller's full, final wrap) holds still across every
+    state of one reveal, so the block doesn't jump vertically as it fills."""
+    leading = line_height(font)
+    y = top
+    index = 0
+    for line in lines:
+        visible = list(line[: max(0, visible_through - index + 1)])
+        width = _line_width(draw, visible, font, font)
+        x = (canvas_width - width) / 2
+
+        cursor = x
+        for local_i, fragment in enumerate(visible):
+            if local_i and fragment.starts_word:
+                cursor += draw.textlength(" ", font=font)
+            w = draw.textlength(fragment.text, font=font)
+            if index + local_i == highlight_index:
+                draw.rounded_rectangle(
+                    [
+                        (cursor - pill_padding_x, y - pill_padding_y),
+                        (cursor + w + pill_padding_x, y + font.size + pill_padding_y),
+                    ],
+                    radius=pill_radius,
+                    fill=pill_color,
+                )
+            cursor += w
+
+        cursor = x
+        for local_i, fragment in enumerate(visible):
+            if local_i and fragment.starts_word:
+                cursor += draw.textlength(" ", font=font)
+            fill = pill_text_color if index + local_i == highlight_index else color
+            draw.text((cursor, y), fragment.text, font=font, fill=fill)
+            cursor += draw.textlength(fragment.text, font=font)
+
+        index += len(line)
         y += leading
     return y
 

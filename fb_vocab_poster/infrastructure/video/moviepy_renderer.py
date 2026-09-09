@@ -43,15 +43,14 @@ class MoviePyVideoRenderer:
         out_path = self.workspace.video(ref.basename)
 
         prepared = self.painter.prepare(lesson)
-        plan = build_slide_plan(narration.segments, prepared.paragraph_page_weights)
+        plan = build_slide_plan(narration.segments, prepared.paragraph_page_weights, lesson.hook_line)
 
-        clips: List[ImageClip] = [
-            fadein(
-                ImageClip(prepared.paint(request, workdir, index)).set_duration(request.duration),
-                min(SLIDE_FADE_IN, request.duration / 2),
-            )
-            for index, request in enumerate(plan)
-        ]
+        clips: List[ImageClip] = []
+        for index, request in enumerate(plan):
+            clip = ImageClip(prepared.paint(request, workdir, index)).set_duration(request.duration)
+            if request.fade_in:
+                clip = fadein(clip, min(SLIDE_FADE_IN, request.duration / 2))
+            clips.append(clip)
 
         video = concatenate_videoclips(clips, method="compose")
         video = CompositeVideoClip([video, self._progress_bar(video.duration)])
